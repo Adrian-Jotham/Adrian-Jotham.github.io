@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reinforcement Learning for Robotics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+
+        :root {
+            --bg: #060a10;
+            --surface: #0d1520;
+            --surface2: #131e2e;
+            --border: #1e3050;
+            --accent: #00e5ff;
+            --accent2: #7c3aed;
+            --accent3: #f97316;
+            --accent4: #22c55e;
+            --text: #e2eaf4;
+            --muted: #7a90a8;
+            --danger: #ef4444;
+            --warn: #eab308;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            line-height: 1.75;
+            font-size: 15px;
+        }
+
+        /* HERO */
+        .hero {
+            background: linear-gradient(135deg, #060a10 0%, #0a1525 40%, #0d1e3a 100%);
+            padding: 80px 40px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 229, 255, 0.07) 0%, transparent 70%);
+        }
+
+        .hero-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            color: var(--muted);
+            max-width: 640px;
+            margin: 0 auto;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* NAV */
+        .toc {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .toc a {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .toc a:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* MAIN */
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 32px;
+        }
+
+        /* SECTIONS */
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        .section h2 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        p {
+            color: #c8d8ea;
+            margin-bottom: 16px;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 12px;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 1px;
+        }
+
+        .card h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2eaf4;
+            margin: 14px 0 8px;
+        }
+
+        /* GRID */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* FORMULA BOX */
+        .formula {
+            background: #080e18;
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            padding: 16px 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--accent);
+            margin: 16px 0;
+            overflow-x: auto;
+            line-height: 1.9;
+        }
+
+        .formula .comment {
+            color: var(--muted);
+        }
+
+        .formula .highlight {
+            color: #f97316;
+        }
+
+        .formula .green {
+            color: var(--accent4);
+        }
+
+        /* DIAGRAM */
+        .diagram {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 32px 20px;
+            margin: 24px 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+        .diagram svg {
+            max-width: 100%;
+        }
+
+        /* COMPARISON TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: var(--surface2);
+            color: var(--accent);
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: #c8d8ea;
+            vertical-align: top;
+        }
+
+        tr:hover td {
+            background: rgba(0, 229, 255, 0.03);
+        }
+
+        .tag-yes {
+            color: var(--accent4);
+            font-weight: 600;
+        }
+
+        .tag-no {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .tag-partial {
+            color: var(--warn);
+            font-weight: 600;
+        }
+
+        /* HIGHLIGHT BOX */
+        .highlight-box {
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+
+        .hb-blue {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+        }
+
+        .hb-purple {
+            background: rgba(124, 58, 237, 0.07);
+            border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        .hb-orange {
+            background: rgba(249, 115, 22, 0.06);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .hb-green {
+            background: rgba(34, 197, 94, 0.06);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .hb-red {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .highlight-box strong {
+            display: block;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Space Mono', monospace;
+            margin-bottom: 8px;
+        }
+
+        .hb-blue strong {
+            color: var(--accent);
+        }
+
+        .hb-purple strong {
+            color: #a78bfa;
+        }
+
+        .hb-orange strong {
+            color: var(--accent3);
+        }
+
+        .hb-green strong {
+            color: var(--accent4);
+        }
+
+        .hb-red strong {
+            color: var(--danger);
+        }
+
+        /* TIMELINE */
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+            margin: 24px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent), var(--accent2));
+            opacity: 0.4;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg);
+        }
+
+        .timeline-item h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .timeline-item p {
+            margin-bottom: 0;
+            font-size: 0.88rem;
+        }
+
+        /* BADGE */
+        .badge {
+            display: inline-block;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            margin-right: 6px;
+        }
+
+        .badge-blue {
+            background: rgba(0, 229, 255, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+
+        .badge-purple {
+            background: rgba(124, 58, 237, 0.12);
+            color: #a78bfa;
+            border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        .badge-orange {
+            background: rgba(249, 115, 22, 0.12);
+            color: var(--accent3);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+        }
+
+        .badge-green {
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--accent4);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .badge-red {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* LIST */
+        ul.styled,
+        ol.styled {
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        ul.styled li,
+        ol.styled li {
+            color: #c8d8ea;
+            margin-bottom: 8px;
+        }
+
+        ul.styled li::marker {
+            color: var(--accent);
+        }
+
+        /* ROBOT LOOP SVG text */
+        .loop-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            fill: var(--muted);
+        }
+
+        .loop-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            fill: var(--accent);
+        }
+
+        /* CALLOUT */
+        .callout {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin: 20px 0;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .callout-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .callout-content h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .callout-content p {
+            font-size: 0.88rem;
+            margin-bottom: 0;
+        }
+
+        /* QUESTION BOX */
+        .question-box {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(0, 229, 255, 0.05));
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-top: 48px;
+        }
+
+        .question-box strong {
+            display: block;
+            font-size: 0.78rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: 'Space Mono', monospace;
+            color: #a78bfa;
+            margin-bottom: 10px;
+        }
+
+        .question-box p {
+            color: #c8d8ea;
+            font-size: 0.93rem;
+            margin-bottom: 8px;
+        }
+
+        .question-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* DIVIDER */
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 48px 32px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            font-family: 'Space Mono', monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero">
+        <div class="hero-tag">🤖 Robotics × Machine Learning</div>
+        <h1>Reinforcement Learning<br>for Robotics</h1>
+        <p>From the mathematical foundations of Markov Decision Processes to state-of-the-art deep RL algorithms —
+            framed through the lens of robotic control.</p>
+    </div>
+
+    <nav class="toc">
+        <a href="#intro">Intro</a>
+        <a href="#mdp">MDP</a>
+        <a href="#bellman">Bellman</a>
+        <a href="#policy">Policy</a>
+        <a href="#classic">Classic RL</a>
+        <a href="#deeprl">Deep RL</a>
+        <a href="#ppo">PPO</a>
+        <a href="#sac">SAC</a>
+        <a href="#sim2real">Sim2Real</a>
+        <a href="#raptor">RAPTOR & Quadcopters</a>
+        <a href="#roadmap">Roadmap</a>
+    </nav>
+
+    <div class="main">
+
+        <!-- SECTION 1: WHY RL -->
+        <section class="section" id="intro">
+            <div class="section-header">
+                <span class="section-num">01</span>
+                <h2>Why Reinforcement Learning in Robotics?</h2>
+            </div>
+
+            <p>Traditional robot control relies on <strong>classical control theory</strong> — PID controllers, model
+                predictive control (MPC), trajectory planning. These work well when you can <em>fully model</em> the
+                system. But robots operate in the real, messy, unpredictable world.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>⚙️ Classical Control</h3>
+                    <ul class="styled">
+                        <li>Requires accurate mathematical model of the system</li>
+                        <li>Works well for linear, well-defined dynamics</li>
+                        <li>Brittle when facing unexpected perturbations</li>
+                        <li>Hard to generalize across tasks</li>
+                        <li>Expert knowledge required for every new scenario</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🧠 Reinforcement Learning</h3>
+                    <ul class="styled">
+                        <li>Learns control from <em>experience</em>, no perfect model needed</li>
+                        <li>Handles nonlinear, high-dimensional dynamics</li>
+                        <li>Can adapt and generalize</li>
+                        <li>Discovers novel strategies humans wouldn't design</li>
+                        <li>End-to-end learning (sensor → action)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="highlight-box hb-blue">
+                <strong>🤖 Robotics Context</strong>
+                <p>Think of a quadruped robot learning to walk. Writing a controller for 12 joints, accounting for
+                    ground contacts, CoM shifts, and disturbances is an enormous modeling challenge. RL can learn this
+                    entirely from trial and error in a simulator — and transfer it to the real world.</p>
+            </div>
+
+            <div class="callout">
+                <div class="callout-icon">🎯</div>
+                <div class="callout-content">
+                    <h4>Core Idea of RL</h4>
+                    <p>An <strong>agent</strong> (robot) interacts with an <strong>environment</strong> (physical world)
+                        by taking <strong>actions</strong>, receiving <strong>rewards</strong>, and updating its
+                        <strong>policy</strong> to maximize long-term cumulative reward. No explicit teacher — just
+                        feedback from the world.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: MDP -->
+        <section class="section" id="mdp">
+            <div class="section-header">
+                <span class="section-num">02</span>
+                <h2>Markov Decision Process (MDP)</h2>
+            </div>
+
+            <p>Everything in RL is built on the <strong>Markov Decision Process</strong> — the mathematical framework
+                that formalizes how an agent interacts with an environment over time.</p>
+
+            <div class="highlight-box hb-orange">
+                <strong>📐 Formal Definition</strong>
+                <p>An MDP is defined by the tuple: <strong>M = (S, A, P, R, γ)</strong></p>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>S — State Space</h3>
+                    <p>All possible situations the agent can be in.</p>
+                    <div class="formula">
+                        <span class="comment">// Quadcopter state example</span><br>
+                        s = [x, y, z, <span class="comment">// position</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;φ, θ, ψ, <span class="comment">// roll, pitch, yaw</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vx, vy, vz, <span class="comment">// linear velocity</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ωx, ωy, ωz] <span class="comment">// angular velocity</span>
+                    </div>
+                    <p>A 12-dimensional continuous state space for a drone.</p>
+                </div>
+                <div class="card">
+                    <h3>A — Action Space</h3>
+                    <p>All actions the agent can take.</p>
+                    <div class="formula">
+                        <span class="comment">// Quadcopter action</span><br>
+                        a = [ω₁, ω₂, ω₃, ω₄]<br>
+                        <span class="comment">// motor speeds (RPM)</span><br><br>
+                        <span class="comment">// Or higher-level:</span><br>
+                        a = [thrust, roll_cmd,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pitch_cmd, yaw_cmd]
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>P — Transition Dynamics</h3>
+                    <div class="formula">
+                        P(s' | s, a)<br><br>
+                        <span class="comment">// Probability of landing</span><br>
+                        <span class="comment">// in state s' given we</span><br>
+                        <span class="comment">// were in s and took a</span>
+                    </div>
+                    <p>In real robots, this is rarely known exactly — this is why we use <em>model-free</em> RL.</p>
+                </div>
+                <div class="card">
+                    <h3>R — Reward Function</h3>
+                    <div class="formula">
+                        R(s, a, s')<br><br>
+                        <span class="comment">// Drone hovering reward:</span><br>
+                        r = -||pos - target||²<br>
+                        &nbsp;&nbsp;&nbsp;- 0.1 * ||ω||² <span class="comment">// penalize motor speed</span><br>
+                        &nbsp;&nbsp;&nbsp;- 10 * crash <span class="comment">// big penalty if crash</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>γ — Discount Factor</h3>
+                <div class="formula">
+                    G_t = r_t + γ·r_{t+1} + γ²·r_{t+2} + ... + γⁿ·r_{t+n}<br><br>
+                    <span class="comment">// γ ∈ [0, 1]</span><br>
+                    <span class="comment">// γ → 0: myopic agent (only cares about immediate reward)</span><br>
+                    <span class="comment">// γ → 1: far-sighted agent (cares about distant future)</span><br>
+                    <span class="comment">// Typical: γ = 0.99 in robotics tasks</span>
+                </div>
+                <p>The discount factor prevents infinite sums and encodes how much the agent cares about future vs
+                    immediate rewards. For a drone stabilization task, γ = 0.99 means a reward 100 steps away is still
+                    worth ~37% of a reward now.</p>
+            </div>
+
+            <div class="highlight-box hb-blue">
+                <strong>🔑 The Markov Property</strong>
+                <p>The "Markov" in MDP means: <em>the future depends only on the current state, not the past</em>.
+                    Formally: P(s_{t+1} | s_t, a_t) = P(s_{t+1} | s_0,...,s_t, a_0,...,a_t). This is why the state must
+                    contain ALL information needed to make a decision — for a drone, that means including velocity, not
+                    just position.</p>
+            </div>
+
+            <!-- RL Loop Diagram -->
+            <div class="diagram">
+                <svg viewBox="0 0 700 300" width="700" height="300">
+                    <!-- Environment Box -->
+                    <rect x="400" y="80" width="220" height="120" rx="10" fill="#0d1520" stroke="#1e3050"
+                        stroke-width="1.5" />
+                    <text x="510" y="135" text-anchor="middle" font-family="Space Mono" font-size="13"
+                        fill="#7a90a8">ENVIRONMENT</text>
+                    <text x="510" y="155" text-anchor="middle" font-family="Space Mono" font-size="10"
+                        fill="#1e3050">Physical World / Simulator</text>
+
+                    <!-- Agent Box -->
+                    <rect x="80" y="80" width="220" height="120" rx="10" fill="#0d1520" stroke="#00e5ff"
+                        stroke-width="1.5" />
+                    <text x="190" y="135" text-anchor="middle" font-family="Space Mono" font-size="13"
+                        fill="#00e5ff">AGENT</text>
+                    <text x="190" y="155" text-anchor="middle" font-family="Space Mono" font-size="10"
+                        fill="#7a90a8">Policy π(a|s)</text>
+
+                    <!-- Action arrow -->
+                    <defs>
+                        <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L8,3 z" fill="#f97316" />
+                        </marker>
+                        <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L8,3 z" fill="#22c55e" />
+                        </marker>
+                        <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L8,3 z" fill="#00e5ff" />
+                        </marker>
+                    </defs>
+
+                    <!-- Action: Agent → Env -->
+                    <path d="M300,110 L400,110" stroke="#f97316" stroke-width="2" marker-end="url(#ah)" fill="none" />
+                    <text x="350" y="104" text-anchor="middle" font-family="Space Mono" font-size="11"
+                        fill="#f97316">action aₜ</text>
+
+                    <!-- Reward: Env → Agent -->
+                    <path d="M400,145 L300,145" stroke="#22c55e" stroke-width="2" marker-end="url(#ah2)" fill="none" />
+                    <text x="350" y="162" text-anchor="middle" font-family="Space Mono" font-size="11"
+                        fill="#22c55e">reward rₜ</text>
+
+                    <!-- State: Env → Agent -->
+                    <path d="M400,175 Q350,230 300,175" stroke="#00e5ff" stroke-width="2" marker-end="url(#ah3)"
+                        fill="none" />
+                    <text x="350" y="248" text-anchor="middle" font-family="Space Mono" font-size="11"
+                        fill="#00e5ff">next state sₜ₊₁</text>
+
+                    <!-- Robot Icon placeholder -->
+                    <circle cx="510" cy="185" r="16" fill="none" stroke="#1e3050" stroke-width="1" />
+                    <text x="510" y="190" text-anchor="middle" font-size="14">🤖</text>
+
+                    <!-- Time label -->
+                    <text x="350" y="20" text-anchor="middle" font-family="Space Mono" font-size="11" fill="#7a90a8">The
+                        Agent-Environment Interaction Loop</text>
+                    <text x="350" y="36" text-anchor="middle" font-family="Space Mono" font-size="10" fill="#1e3050">one
+                        timestep: sₜ → aₜ → rₜ, sₜ₊₁</text>
+                </svg>
+            </div>
+        </section>
+
+        <!-- SECTION 3: BELLMAN -->
+        <section class="section" id="bellman">
+            <div class="section-header">
+                <span class="section-num">03</span>
+                <h2>Value Functions & Bellman Equations</h2>
+            </div>
+
+            <p>The central question in RL is: <em>"How good is it to be in state s?"</em> or <em>"How good is action a
+                    in state s?"</em>. Value functions answer this.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>V(s) — State Value Function</h3>
+                    <p>Expected cumulative reward starting from state s and following policy π.</p>
+                    <div class="formula">
+                        V^π(s) = E_π[G_t | s_t = s]<br><br>
+                        <span class="green">= E_π[Σ γᵏ r_{t+k} | s_t = s]</span><br><br>
+                        <span class="comment">// "How good is this state?"</span>
+                    </div>
+                    <p>Example: A drone at stable hover altitude has high V(s). A drone in freefall has very negative
+                        V(s).</p>
+                </div>
+                <div class="card">
+                    <h3>Q(s,a) — Action-Value Function</h3>
+                    <p>Expected cumulative reward starting from state s, taking action a, then following π.</p>
+                    <div class="formula">
+                        Q^π(s,a) = E_π[G_t | s_t=s, a_t=a]<br><br>
+                        <span class="green">= R(s,a) + γ Σ P(s'|s,a) V^π(s')</span><br><br>
+                        <span class="comment">// "How good is this action?"</span>
+                    </div>
+                    <p>The Q-function is the most directly useful: it tells the agent which action to take.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Bellman Expectation Equation</h3>
+                <p>The most fundamental equation in RL — V(s) can be decomposed recursively:</p>
+                <div class="formula">
+                    V^π(s) = Σ_a π(a|s) [R(s,a) + γ Σ_{s'} P(s'|s,a) V^π(s')]<br><br>
+                    <span class="comment">────────────────────────────────────────────────</span><br>
+                    <span class="comment">Current reward + γ × future value</span><br><br>
+                    Q^π(s,a) = R(s,a) + γ Σ_{s'} P(s'|s,a) Σ_{a'} π(a'|s') Q^π(s',a')
+                </div>
+                <p>Think of it like: <em>"the value of where I am now = what I get immediately + the discounted value of
+                        where I'll end up."</em></p>
+            </div>
+
+            <div class="card">
+                <h3>⭐ Bellman Optimality Equation</h3>
+                <p>For the <em>optimal</em> policy π*, the Bellman optimality equation gives the best possible value:
+                </p>
+                <div class="formula">
+                    V*(s) = max_a [R(s,a) + γ Σ_{s'} P(s'|s,a) V*(s')]<br><br>
+                    Q*(s,a) = R(s,a) + γ Σ_{s'} P(s'|s,a) max_{a'} Q*(s',a')<br><br>
+                    <span class="comment">// Optimal policy: π*(s) = argmax_a Q*(s,a)</span>
+                </div>
+                <div class="highlight-box hb-blue">
+                    <strong>🤖 Robotics Insight</strong>
+                    <p>If we knew Q*(s,a) perfectly, controlling a robot is trivial: at every state s, just pick the
+                        action with the highest Q value. All of deep RL is fundamentally about <em>approximating</em> Q*
+                        or π* when the state and action spaces are too large for exact computation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: POLICY -->
+        <section class="section" id="policy">
+            <div class="section-header">
+                <span class="section-num">04</span>
+                <h2>Policy: The Robot's Brain</h2>
+            </div>
+
+            <p>The <strong>policy</strong> π is the mapping from states to actions — it IS the controller. Everything in
+                RL aims to find a good policy.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>📊 Deterministic Policy</h3>
+                    <div class="formula">
+                        π: S → A<br>
+                        a = π(s)<br><br>
+                        <span class="comment">// "In state s, always do action a"</span><br>
+                        <span class="comment">// Used in: DDPG, TD3</span>
+                    </div>
+                    <p>Better for continuous robot actions like joint torques. Faster at inference.</p>
+                </div>
+                <div class="card">
+                    <h3>🎲 Stochastic Policy</h3>
+                    <div class="formula">
+                        π: S → P(A)<br>
+                        a ~ π(a|s)<br><br>
+                        <span class="comment">// "Sample action from distribution"</span><br>
+                        <span class="comment">// Used in: PPO, SAC, TRPO</span>
+                    </div>
+                    <p>Better for exploration and handling uncertainty. Natural for contact-rich manipulation.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Three Approaches to Finding π*</h3>
+                <div class="grid-3">
+                    <div>
+                        <h4>Value-Based</h4>
+                        <p>Learn Q*(s,a), then act greedily. Best for discrete actions.</p>
+                        <span class="badge badge-blue">DQN</span>
+                        <span class="badge badge-blue">C51</span>
+                    </div>
+                    <div>
+                        <h4>Policy-Based</h4>
+                        <p>Directly optimize π. Best for continuous action spaces (robotics).</p>
+                        <span class="badge badge-purple">REINFORCE</span>
+                        <span class="badge badge-purple">PPO</span>
+                    </div>
+                    <div>
+                        <h4>Actor-Critic</h4>
+                        <p>Learn both π and V/Q simultaneously. Best of both worlds.</p>
+                        <span class="badge badge-orange">SAC</span>
+                        <span class="badge badge-orange">TD3</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: CLASSIC RL -->
+        <section class="section" id="classic">
+            <div class="section-header">
+                <span class="section-num">05</span>
+                <h2>Classical RL Algorithms</h2>
+            </div>
+
+            <p>Before deep learning entered the picture, classical RL used <strong>tabular methods</strong> or
+                <strong>linear function approximation</strong>. Understanding these is essential before jumping to deep
+                RL.</p>
+
+            <div class="card">
+                <h3>📋 Q-Learning (Tabular)</h3>
+                <p>The most foundational off-policy, value-based algorithm. Stores Q(s,a) as a table.</p>
+                <div class="formula">
+                    <span class="comment">// Q-learning update rule (Temporal Difference)</span><br>
+                    Q(s,a) ← Q(s,a) + α [r + γ max_{a'} Q(s',a') - Q(s,a)]<br><br>
+                    <span class="highlight">TD error (δ) = r + γ max Q(s',a') - Q(s,a)</span><br><br>
+                    <span class="comment">// α = learning rate (e.g. 0.01)</span><br>
+                    <span class="comment">// The target: r + γ max Q(s', a') is the Bellman target</span>
+                </div>
+                <div class="highlight-box hb-orange">
+                    <strong>⚠️ Why tabular Q-learning breaks in robotics</strong>
+                    <p>A 12D drone state with continuous values → infinite number of states. You'd need a table with
+                        infinite rows. This is the fundamental problem deep RL solves: use a neural network to
+                        <em>generalize</em> across states.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎲 Exploration: ε-Greedy</h3>
+                <p>The classic exploration-exploitation dilemma: how does the robot try new things vs exploit what it
+                    knows?</p>
+                <div class="formula">
+                    With probability ε: take random action (explore)<br>
+                    With probability 1-ε: take a = argmax Q(s,a) (exploit)<br><br>
+                    <span class="comment">// Decaying schedule: ε = 1.0 → 0.05 over training</span><br>
+                    <span class="comment">// Start with lots of exploration, then exploit more</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔁 SARSA vs Q-Learning</h3>
+                <table>
+                    <tr>
+                        <th>Property</th>
+                        <th>Q-Learning</th>
+                        <th>SARSA</th>
+                    </tr>
+                    <tr>
+                        <td>Type</td>
+                        <td><span class="badge badge-blue">Off-policy</span></td>
+                        <td><span class="badge badge-purple">On-policy</span></td>
+                    </tr>
+                    <tr>
+                        <td>Update target</td>
+                        <td>max Q(s', a') — best possible</td>
+                        <td>Q(s', a') — action actually taken</td>
+                    </tr>
+                    <tr>
+                        <td>Safer?</td>
+                        <td class="tag-no">No</td>
+                        <td class="tag-yes">Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Robotics use</td>
+                        <td>Simulation training</td>
+                        <td>Real hardware (safer)</td>
+                    </tr>
+                </table>
+                <p>In robotics: SARSA is safer for real hardware because it accounts for the actual exploratory
+                    behavior. Q-learning can be reckless.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 6: DEEP RL -->
+        <section class="section" id="deeprl">
+            <div class="section-header">
+                <span class="section-num">06</span>
+                <h2>The Deep RL Revolution</h2>
+            </div>
+
+            <p>Deep RL replaces the Q-table with a <strong>neural network</strong> — a universal function approximator.
+                Now we can handle the continuous, high-dimensional states that robotics requires.</p>
+
+            <div class="card">
+                <h3>🧠 DQN — The Bridge (2013, DeepMind)</h3>
+                <p>Deep Q-Network was the first major success. Proved that NNs could learn Q-functions stably.</p>
+                <div class="formula">
+                    Q(s, a; θ) ← Neural Network with params θ<br><br>
+                    <span class="comment">// Loss: minimize Bellman error</span><br>
+                    L(θ) = E[(r + γ max_{a'} Q(s',a'; θ⁻) - Q(s,a; θ))²]<br><br>
+                    <span class="comment">// Two key tricks:</span><br>
+                    <span class="highlight">1. Experience Replay Buffer D = {(s,a,r,s')}</span><br>
+                    <span class="green">2. Target Network θ⁻ (updated slowly)</span>
+                </div>
+                <div class="callout">
+                    <div class="callout-icon">🗄️</div>
+                    <div class="callout-content">
+                        <h4>Why Experience Replay?</h4>
+                        <p>Neural networks assume i.i.d. (independent) data. But consecutive (s,a,r,s') tuples are
+                            highly correlated. Replay buffers store millions of past transitions and sample mini-batches
+                            randomly — breaking the correlation and dramatically stabilizing training.</p>
+                    </div>
+                </div>
+                <div class="highlight-box hb-red">
+                    <strong>⚠️ DQN Limitation for Robotics</strong>
+                    <p>DQN only works with <strong>discrete</strong> action spaces. Robot joints require continuous
+                        torques — you can't discretize "apply exactly 3.47 Nm to joint 3." This drove the development of
+                        continuous-action deep RL algorithms.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎭 Policy Gradient — The Foundation of Modern RL</h3>
+                <p>Instead of learning Q and acting greedily, directly parameterize and optimize the policy π_θ.</p>
+                <div class="formula">
+                    <span class="comment">// Objective: maximize expected return</span><br>
+                    J(θ) = E_{τ ~ π_θ}[G(τ)] <span class="comment">// τ = trajectory</span><br><br>
+                    <span class="comment">// Policy Gradient Theorem:</span><br>
+                    ∇_θ J(θ) = E[∇_θ log π_θ(a|s) · G_t]<br><br>
+                    <span class="highlight">∇_θ log π_θ(a|s)</span> <span class="comment">← "score function"</span><br>
+                    <span class="green">G_t</span> <span class="comment">← return (reward signal)</span>
+                </div>
+                <p>Intuition: if an action led to high return, increase its probability. If it led to low return,
+                    decrease it.</p>
+
+                <div class="grid-2" style="margin-top:16px">
+                    <div class="highlight-box hb-blue">
+                        <strong>REINFORCE (Monte Carlo PG)</strong>
+                        <p>Collect full episode, compute returns, update θ. Simple but very high variance. Rarely used
+                            alone in robotics.</p>
+                    </div>
+                    <div class="highlight-box hb-purple">
+                        <strong>Actor-Critic (A2C/A3C)</strong>
+                        <p>Replace G_t with Q(s,a) or advantage A(s,a) = Q(s,a) - V(s). Dramatically reduces variance.
+                            Foundation for PPO and SAC.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Advantage Function — Critical for Robotics</h3>
+                <div class="formula">
+                    A(s, a) = Q(s, a) - V(s)<br><br>
+                    <span class="comment">// "How much BETTER is action a compared to</span><br>
+                    <span class="comment">// the average action in state s?"</span><br><br>
+                    <span class="comment">// Practical estimate (GAE - Generalized Advantage Estimation):</span><br>
+                    Â_t = Σ_{l=0}^{∞} (γλ)ˡ δ_{t+l}<br>
+                    <span class="comment">// where δ_t = r_t + γV(s_{t+1}) - V(s_t)</span><br>
+                    <span class="comment">// λ ∈ [0,1] controls bias-variance tradeoff</span>
+                </div>
+                <p>GAE (Schulman 2016) is used in almost every modern robotics RL paper. λ=0.95 is a common default.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 7: PPO -->
+        <section class="section" id="ppo">
+            <div class="section-header">
+                <span class="section-num">07</span>
+                <h2>PPO — Proximal Policy Optimization</h2>
+            </div>
+
+            <div class="highlight-box hb-green">
+                <strong>🏆 Why PPO dominates robotics RL</strong>
+                <p>PPO is the <em>workhorse</em> of robotics locomotion. Used in OpenAI's locomotion work, Agility
+                    Robotics (Cassie), Boston Dynamics research, NVIDIA Isaac Gym. It's stable, sample-efficient enough,
+                    and works well out of the box.</p>
+            </div>
+
+            <p>PPO solves a key problem with vanilla policy gradients: if you take too large an update step, the policy
+                can collapse catastrophically. In robotics, this means the robot falls over and never recovers.</p>
+
+            <div class="card">
+                <h3>🔒 The Core Problem PPO Solves</h3>
+                <p>TRPO (Trust Region Policy Optimization) solved this first by constraining the KL divergence between
+                    old and new policy — but was computationally expensive. PPO achieves the same stability with a
+                    simple clipping trick.</p>
+                <div class="formula">
+                    <span class="comment">// Define probability ratio:</span><br>
+                    r_t(θ) = π_θ(a_t|s_t) / π_{θ_old}(a_t|s_t)<br><br>
+                    <span class="comment">// Vanilla PG objective (can cause huge steps):</span><br>
+                    L^PG = E[r_t(θ) · Â_t]<br><br>
+                    <span class="highlight">// PPO Clipped Objective:</span><br>
+                    L^CLIP = E[min(r_t(θ)·Â_t, clip(r_t(θ), 1-ε, 1+ε)·Â_t)]<br><br>
+                    <span class="comment">// ε = 0.2 (common default)</span><br>
+                    <span class="comment">// This CLIPS the update if r_t strays too far from 1</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Understanding the PPO Clip Intuitively</h3>
+                <div class="grid-2">
+                    <div>
+                        <h4>When Â > 0 (good action)</h4>
+                        <p>We want to increase π(a|s). But we clip at (1+ε) — don't increase probability too
+                            aggressively. The bound prevents overshooting.</p>
+                    </div>
+                    <div>
+                        <h4>When Â &lt; 0 (bad action)</h4>
+                        <p>We want to decrease π(a|s). But we clip at (1-ε) — don't decrease probability too
+                            aggressively. Prevents the policy from unlearning good behaviors.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📝 PPO Full Algorithm — Robotics Implementation</h3>
+                <div class="formula">
+                    <span class="comment">// Full PPO loop for a robot:</span><br>
+                    <br>
+                    Initialize policy π_θ, value net V_φ<br>
+                    <br>
+                    for iteration = 1, 2, ... do:<br>
+                    &nbsp;&nbsp;<span class="highlight">// 1. Collect N timesteps of robot experience</span><br>
+                    &nbsp;&nbsp;D = {s_t, a_t, r_t, s_{t+1}} from π_θ_old<br>
+                    <br>
+                    &nbsp;&nbsp;<span class="green">// 2. Compute advantages using GAE</span><br>
+                    &nbsp;&nbsp;Â_t = GAE(r_t, V_φ(s_t)) with λ=0.95<br>
+                    <br>
+                    &nbsp;&nbsp;<span class="comment">// 3. Optimize for K epochs (e.g. K=10)</span><br>
+                    &nbsp;&nbsp;for epoch in range(K):<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;θ ← θ + α ∇_θ L^CLIP(θ)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;φ ← φ - α ∇_φ (V_φ(s) - V_target)²<br>
+                    <br>
+                    &nbsp;&nbsp;θ_old ← θ<br>
+                    end for
+                </div>
+                <div class="grid-3" style="margin-top:16px">
+                    <div class="highlight-box hb-blue">
+                        <strong>Network</strong>
+                        <p>MLP: 2-3 hidden layers, 256-512 units, tanh activation for robot control</p>
+                    </div>
+                    <div class="highlight-box hb-orange">
+                        <strong>Rollout size</strong>
+                        <p>Typically 2048-4096 steps per update. More steps = lower variance but slower updates.</p>
+                    </div>
+                    <div class="highlight-box hb-green">
+                        <strong>Parallelism</strong>
+                        <p>Run 16-4096 parallel environments in sim. Isaac Gym runs 4096 robots simultaneously on GPU.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🤖 PPO in Robot Locomotion — Reward Shaping Example</h3>
+                <div class="formula">
+                    <span class="comment">// Legged robot locomotion reward (typical):</span><br>
+                    r = w₁ · v_forward <span class="comment">// reward forward velocity</span><br>
+                    &nbsp;&nbsp;- w₂ · ||τ||² <span class="comment">// penalize joint torques</span><br>
+                    &nbsp;&nbsp;- w₃ · ||ω_body||² <span class="comment">// penalize body angular velocity</span><br>
+                    &nbsp;&nbsp;- w₄ · foot_contact_force <span class="comment">// smooth foot contacts</span><br>
+                    &nbsp;&nbsp;- w₅ · action_rate <span class="comment">// penalize jittery actions</span><br>
+                    &nbsp;&nbsp;+ w₆ · alive_bonus <span class="comment">// stay upright</span>
+                </div>
+                <p>Reward shaping is an art — each term guides behavior. This is one of the most critical (and
+                    difficult) parts of applying RL to real robots.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 8: SAC -->
+        <section class="section" id="sac">
+            <div class="section-header">
+                <span class="section-num">08</span>
+                <h2>SAC — Soft Actor-Critic</h2>
+            </div>
+
+            <div class="highlight-box hb-purple">
+                <strong>🔥 SAC's unique contribution</strong>
+                <p>SAC introduces <strong>maximum entropy RL</strong> — the agent is encouraged to be as random as
+                    possible while still performing well. This makes it extraordinarily robust for robot manipulation
+                    and contact-rich tasks.</p>
+            </div>
+
+            <div class="card">
+                <h3>🌡️ Maximum Entropy Framework</h3>
+                <p>SAC doesn't just maximize reward — it maximizes reward PLUS policy entropy H(π):</p>
+                <div class="formula">
+                    J(π) = Σ_t E[r(s_t, a_t) + <span class="highlight">α · H(π(·|s_t))]</span><br><br>
+                    <span class="comment">// H(π) = -Σ π(a|s) log π(a|s) ← entropy</span><br>
+                    <span class="comment">// α = temperature parameter (can be auto-tuned)</span><br><br>
+                    <span class="comment">// High entropy = more random = more exploration</span><br>
+                    <span class="comment">// The agent explores naturally, without ε-greedy</span>
+                </div>
+                <p>For robotics, this means: SAC explores better in manipulation tasks with many local optima, and the
+                    resulting policy is more robust to perturbations.</p>
+            </div>
+
+            <div class="card">
+                <h3>🏗️ SAC Architecture</h3>
+                <div class="formula">
+                    <span class="comment">// SAC has 5 neural networks:</span><br>
+                    π_θ(a|s) <span class="highlight">← Actor (policy) — Gaussian output</span><br>
+                    Q_φ1(s,a) <span class="green">← Critic 1 (Q-function)</span><br>
+                    Q_φ2(s,a) <span class="green">← Critic 2 (Q-function)</span><br>
+                    Q_φ1_target(s,a) <span class="comment">← Target Critic 1 (slow update)</span><br>
+                    Q_φ2_target(s,a) <span class="comment">← Target Critic 2 (slow update)</span><br><br>
+                    <span class="comment">// Two critics → take min → prevents Q overestimation</span><br>
+                    <span class="comment">// (Double Q-learning trick)</span>
+                </div>
+
+                <h4>SAC Soft Bellman Target</h4>
+                <div class="formula">
+                    y = r + γ · (min(Q₁_target, Q₂_target)(s',ã') - α log π(ã'|s'))<br>
+                    <span class="comment">// ã' ~ π(·|s') — sample next action from policy</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎛️ Automatic Temperature Tuning</h3>
+                <p>One of SAC's killer features — α adjusts automatically so the entropy stays at a target value:</p>
+                <div class="formula">
+                    min_α E[-α (log π(a|s) + H_target)]<br><br>
+                    <span class="comment">// H_target = -|A| (target entropy = negative action dim)</span><br>
+                    <span class="comment">// For a 6-DOF robot arm: H_target = -6</span><br>
+                    <span class="comment">// α increases if entropy too low → more exploration</span><br>
+                    <span class="comment">// α decreases if entropy too high → more exploitation</span>
+                </div>
+            </div>
+
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>PPO</th>
+                    <th>SAC</th>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td><span class="badge badge-blue">On-policy</span></td>
+                    <td><span class="badge badge-purple">Off-policy</span></td>
+                </tr>
+                <tr>
+                    <td>Sample Efficiency</td>
+                    <td class="tag-partial">Medium</td>
+                    <td class="tag-yes">High (replay buffer)</td>
+                </tr>
+                <tr>
+                    <td>Parallel Envs</td>
+                    <td class="tag-yes">Excellent (scales linearly)</td>
+                    <td class="tag-partial">Less critical</td>
+                </tr>
+                <tr>
+                    <td>Locomotion</td>
+                    <td class="tag-yes">State of the art</td>
+                    <td class="tag-yes">Works well</td>
+                </tr>
+                <tr>
+                    <td>Manipulation / Dexterous</td>
+                    <td class="tag-partial">OK</td>
+                    <td class="tag-yes">Often better</td>
+                </tr>
+                <tr>
+                    <td>Hyperparameter sensitivity</td>
+                    <td class="tag-partial">Moderate</td>
+                    <td class="tag-yes">Lower (auto α)</td>
+                </tr>
+                <tr>
+                    <td>Real hardware sample budget</td>
+                    <td class="tag-no">High (needs many samples)</td>
+                    <td class="tag-yes">Better (sample efficient)</td>
+                </tr>
+            </table>
+
+            <div class="callout">
+                <div class="callout-icon">💡</div>
+                <div class="callout-content">
+                    <h4>Other Important Algorithms</h4>
+                    <p><strong>TD3 (Twin Delayed DDPG)</strong> — deterministic policy, great for low-noise
+                        environments. <strong>DDPG</strong> — first continuous action deep RL, ancestor of SAC and TD3.
+                        <strong>Dreamer / DreamerV3</strong> — model-based RL, learns a world model first, extremely
+                        sample efficient for robotics.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 9: SIM2REAL -->
+        <section class="section" id="sim2real">
+            <div class="section-header">
+                <span class="section-num">09</span>
+                <h2>Sim-to-Real Transfer</h2>
+            </div>
+
+            <p>Training on real hardware is expensive, dangerous, and slow. We train in simulation, then deploy on real
+                robots. But simulators aren't perfect — this creates the <strong>reality gap</strong>.</p>
+
+            <div class="card">
+                <h3>🌍 The Reality Gap Problem</h3>
+                <ul class="styled">
+                    <li>Simulator physics ≠ real physics (friction, motor delays, flex, etc.)</li>
+                    <li>Sensor noise in real world that doesn't exist in sim</li>
+                    <li>Unmodeled dynamics (cable sag, IMU bias, thermal effects)</li>
+                    <li>Policy trained in perfect sim fails when deployed</li>
+                </ul>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🎲 Domain Randomization</h3>
+                    <p>Randomize simulation parameters during training so the policy learns to be robust to variation.
+                    </p>
+                    <div class="formula">
+                        <span class="comment">// Randomize at each episode:</span><br>
+                        mass ∈ [0.8×, 1.2×] nominal<br>
+                        friction ∈ [0.5, 1.5]<br>
+                        motor_delay ∈ [0, 20ms]<br>
+                        PD_gains ∈ [0.8×, 1.2×]<br>
+                        external_force ~ N(0, 5N)
+                    </div>
+                    <p>If the policy works across all these variations, real-world deployment is just another domain.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>🔧 System Identification</h3>
+                    <p>Measure real robot parameters precisely and narrow the sim gap before training.</p>
+                    <ul class="styled">
+                        <li>Motor torque curves from hardware tests</li>
+                        <li>Inertia tensors from CAD</li>
+                        <li>Joint friction estimation</li>
+                        <li>Contact dynamics calibration</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔑 Key Techniques for Robust Sim2Real</h3>
+                <table>
+                    <tr>
+                        <th>Technique</th>
+                        <th>Description</th>
+                        <th>Used In</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Privilege Learning</strong></td>
+                        <td>Teacher policy sees sim state; student learns from observations only</td>
+                        <td>ANYmal, Unitree Go2</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Curriculum Learning</strong></td>
+                        <td>Start with easy tasks, gradually increase difficulty</td>
+                        <td>Most locomotion work</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Adaptive Residuals</strong></td>
+                        <td>Estimate model mismatch online and compensate</td>
+                        <td>Agile flight, manipulation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RMA (Rapid Motor Adaptation)</strong></td>
+                        <td>Encoder adapts policy to environmental context online</td>
+                        <td>Legged robots (Kumar 2021)</td>
+                    </tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 10: RAPTOR / QUADCOPTER -->
+        <section class="section" id="raptor">
+            <div class="section-header">
+                <span class="section-num">10</span>
+                <h2>Quadcopter Control: From PID to RL — The RAPTOR Story</h2>
+            </div>
+
+            <div class="highlight-box hb-orange">
+                <strong>⚡ Why Quadcopters are a Perfect RL Showcase</strong>
+                <p>A drone is a highly nonlinear, underactuated system with complex aerodynamics, prop wash effects, and
+                    disturbances. Classical controllers struggle at agile flight. RL thrives here.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Classical Drone Control Stack</h3>
+                <div class="formula">
+                    <span class="comment">// Traditional cascade controller:</span><br>
+                    Trajectory Planner<br>
+                    &nbsp;&nbsp;↓ desired position + velocity<br>
+                    Position Controller (outer loop, ~50 Hz)<br>
+                    &nbsp;&nbsp;↓ desired attitude (roll/pitch/yaw)<br>
+                    Attitude Controller (inner loop, ~500 Hz)<br>
+                    &nbsp;&nbsp;↓ desired angular rates<br>
+                    Rate Controller (PID, ~1000 Hz)<br>
+                    &nbsp;&nbsp;↓ motor commands [ω₁, ω₂, ω₃, ω₄]
+                </div>
+                <p>This works well for slow, smooth flight. But consider: aggressive maneuvers (powerloops, flips), wind
+                    gusts, motor failures, slung loads — the linear assumptions break down.</p>
+            </div>
+
+            <div class="card">
+                <h3>🚁 RAPTOR — Rapid Agile Post-Stall Trajectory Optimization with RL</h3>
+
+                <div class="callout">
+                    <div class="callout-icon">📄</div>
+                    <div class="callout-content">
+                        <h4>Paper Context</h4>
+                        <p>Work from Floreano Lab / ETH Zürich group. RAPTOR demonstrated that RL can push quadcopters
+                            into aerodynamic regimes completely beyond classical control — including <strong>post-stall
+                                flight</strong> where the rotors stall and classical models completely fail.</p>
+                    </div>
+                </div>
+
+                <h4>Why Classical Control Fails in Agile Flight</h4>
+                <ul class="styled">
+                    <li><strong>Aerodynamic nonlinearities:</strong> At high velocities/angles, blade element theory
+                        breaks down. Prop wash, induced drag — these aren't in the linear model.</li>
+                    <li><strong>Post-stall regime:</strong> When drone pitches aggressively (>60°), rotors stall like
+                        aircraft wings — thrust drops nonlinearly. Classical PID has no model for this.</li>
+                    <li><strong>Latency and actuation limits:</strong> Motor dynamics are nonlinear at extremes.
+                        Classical controller assumes instant response.</li>
+                </ul>
+
+                <h4>The RL Approach in RAPTOR</h4>
+                <div class="formula">
+                    <span class="comment">// State:</span><br>
+                    s = [pos, vel, quat, ang_vel, <span class="comment">// 13-dim</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prev_motor_cmd, progress_indicator]<br><br>
+                    <span class="comment">// Action:</span><br>
+                    a = [Δω₁, Δω₂, Δω₃, Δω₄] <span class="comment">// motor speed residuals</span><br><br>
+                    <span class="comment">// Reward (tracking + efficiency):</span><br>
+                    r = -||p - p_ref||² - ||v - v_ref||² <br>
+                    &nbsp;&nbsp;&nbsp;- 0.01||a||² - penalty_for_crash
+                </div>
+
+                <h4>Key Technical Contributions</h4>
+                <div class="grid-2">
+                    <div class="highlight-box hb-blue">
+                        <strong>Asymmetric Actor-Critic</strong>
+                        <p>Actor (deployed on drone) only uses onboard sensor state. Critic (only during training) sees
+                            privileged info like exact drag coefficients. This enables better learning while keeping
+                            deployment lean.</p>
+                    </div>
+                    <div class="highlight-box hb-purple">
+                        <strong>Aerodynamic Disturbance Modeling</strong>
+                        <p>During training, random aerodynamic forces are injected. The policy learns to implicitly
+                            compensate for aero effects it cannot directly model.</p>
+                    </div>
+                    <div class="highlight-box hb-orange">
+                        <strong>Trajectory Conditioned Policy</strong>
+                        <p>Policy takes reference trajectory as context — same policy can execute diverse maneuvers
+                            (hover, flip, powerloop) by conditioning on different trajectory segments.</p>
+                    </div>
+                    <div class="highlight-box hb-green">
+                        <strong>Sim-to-Real with DR</strong>
+                        <p>Motor time constants, thrust coefficients, drag terms randomized over wide ranges. Policy
+                            achieves &lt;10cm tracking error on real hardware doing 14 m/s agile maneuvers.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Classical vs RL Control for Quadcopters</h3>
+                <table>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>PID + MPC</th>
+                        <th>RL Policy</th>
+                    </tr>
+                    <tr>
+                        <td>Hover in calm air</td>
+                        <td class="tag-yes">Excellent</td>
+                        <td class="tag-yes">Excellent</td>
+                    </tr>
+                    <tr>
+                        <td>Steady wind (known)</td>
+                        <td class="tag-yes">Good (with feedforward)</td>
+                        <td class="tag-yes">Good (adaptive)</td>
+                    </tr>
+                    <tr>
+                        <td>Sudden wind gust</td>
+                        <td class="tag-partial">OK (recovery lag)</td>
+                        <td class="tag-yes">Better (anticipatory)</td>
+                    </tr>
+                    <tr>
+                        <td>Agile racing (post-stall)</td>
+                        <td class="tag-no">Fails (model breakdown)</td>
+                        <td class="tag-yes">State of the art</td>
+                    </tr>
+                    <tr>
+                        <td>Motor failure recovery</td>
+                        <td class="tag-no">Not robust</td>
+                        <td class="tag-yes">Can be trained for</td>
+                    </tr>
+                    <tr>
+                        <td>Slung load / payload shift</td>
+                        <td class="tag-partial">Needs retuning</td>
+                        <td class="tag-yes">Implicit adaptation</td>
+                    </tr>
+                    <tr>
+                        <td>Interpretability</td>
+                        <td class="tag-yes">Fully interpretable</td>
+                        <td class="tag-no">Black box</td>
+                    </tr>
+                    <tr>
+                        <td>Safety certification</td>
+                        <td class="tag-yes">Possible</td>
+                        <td class="tag-no">Open problem</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>🌍 Related Work: Other RL-Controlled Drones</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>DeepPilot / Learning to Fly (ETH, 2019)</h4>
+                        <p>First demonstrations of PPO for agile drone flight, sim-to-real. Showed basic acrobatics.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Swift (Nature, 2023) — ETH Zürich</h4>
+                        <p>RL-trained drone that <strong>beats human FPV champions</strong> in drone racing at speeds up
+                            to 108 km/h. PPO with domain randomization + onboard camera. Landmark result.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>RAPTOR (2023-2024)</h4>
+                        <p>Post-stall agile trajectory tracking. RL extends flight envelope to aerodynamic regimes
+                            completely inaccessible to classical control.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Skydio + Commercial</h4>
+                        <p>RL elements used in production drones for obstacle avoidance and tracking. RL is already in
+                            your hands.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 11: ROADMAP -->
+        <section class="section" id="roadmap">
+            <div class="section-header">
+                <span class="section-num">11</span>
+                <h2>Your Learning Roadmap</h2>
+            </div>
+
+            <div class="card">
+                <h3>📚 Structured Path — Fresh Graduate → RL Robotics Researcher</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>Phase 1 — Foundations (1-2 months)</h4>
+                        <p>Sutton & Barto "Reinforcement Learning: An Introduction" (free online). Complete OpenAI
+                            Gym/Gymnasium tasks: CartPole (PPO), MountainCar, LunarLander. Code Q-learning from scratch.
+                        </p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Phase 2 — Deep RL (1-2 months)</h4>
+                        <p>Implement DQN, PPO, SAC from scratch in PyTorch. Use Stable-Baselines3 for benchmarking. Read
+                            the original papers: DQN (Mnih 2015), PPO (Schulman 2017), SAC (Haarnoja 2018).</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Phase 3 — Robotics Sim (2-3 months)</h4>
+                        <p>Isaac Gym / Isaac Lab (NVIDIA) or MuJoCo with dm_control. Train a legged robot to walk.
+                            Implement domain randomization. Do your first sim-to-real (even on a simple arm).</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Phase 4 — Drone/Aerial RL (2-3 months)</h4>
+                        <p>AirSim or Flightmare simulator. Implement PPO for hover, then trajectory tracking. Study
+                            RAPTOR and Swift papers. Attempt deployment on real hardware (Crazyflie is a good starter
+                            platform).</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Phase 5 — Research (ongoing)</h4>
+                        <p>Follow CoRL, ICRA, IROS, NeurIPS (robot learning track). Explore model-based RL (Dreamer),
+                            offline RL, world models, foundation models for robotics (RT-2, π₀).</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🛠️ Essential Tools</h3>
+                    <ul class="styled">
+                        <li><strong>PyTorch</strong> — Deep learning framework</li>
+                        <li><strong>Stable-Baselines3</strong> — Clean PPO/SAC implementations</li>
+                        <li><strong>Isaac Lab / Isaac Gym</strong> — GPU-accelerated robot sim</li>
+                        <li><strong>MuJoCo</strong> — Physics simulator (now free)</li>
+                        <li><strong>Flightmare / AirSim</strong> — Drone simulators</li>
+                        <li><strong>Crazyflie 2.1</strong> — Real nano-drone platform</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>📄 Must-Read Papers</h3>
+                    <ul class="styled">
+                        <li>PPO — Schulman et al. 2017</li>
+                        <li>SAC — Haarnoja et al. 2018</li>
+                        <li>Learning to Walk in Minutes — ETH 2022</li>
+                        <li>RMA — Kumar et al. 2021</li>
+                        <li>Swift — Kaufmann et al. Nature 2023</li>
+                        <li>RAPTOR — Romero et al. 2023/24</li>
+                        <li>DreamerV3 — Hafner 2023</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- NURTURE QUESTION -->
+        <div class="question-box">
+            <strong>🎓 Deepen Your Understanding</strong>
+            <p>Now that you have the full picture, here's a question to test and push your understanding further:</p>
+            <p><strong>Consider a quadcopter trained with PPO that achieves great performance in simulation but crashes
+                    on the real drone. You suspect the reality gap is caused by motor time delays the simulator doesn't
+                    model. What are three specific changes you would make to your training pipeline to fix this — and
+                    what are the tradeoffs of each?</strong></p>
+            <p>Think about: how domain randomization would address this, whether you'd change the state representation,
+                and whether you might add a history window to the policy's input. There's no single right answer — this
+                is about building intuition for sim-to-real engineering.</p>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        REINFORCEMENT LEARNING FOR ROBOTICS · MDP → BELLMAN → POLICY GRADIENT → PPO · SAC · SIM2REAL · RAPTOR
+    </div>
+
+</body>
+
+</html>

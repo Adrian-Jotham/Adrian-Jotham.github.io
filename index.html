@@ -684,6 +684,147 @@
       background: var(--bg2);
     }
 
+    /* ─── Learning Docs ─────────────────────────────────────────── */
+    #learning {
+      background: var(--bg);
+    }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .learn-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .learn-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 60%, rgba(0, 0, 0, 0.03) 100%);
+      pointer-events: none;
+    }
+
+    .learn-card:hover {
+      border-color: var(--border-strong);
+      background: var(--surface2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      color: inherit;
+    }
+
+    .learn-card-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .learn-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+    }
+
+    .learn-badge.rl {
+      background: rgba(43, 91, 204, 0.07);
+      border-color: rgba(43, 91, 204, 0.22);
+      color: #2b5bcc;
+    }
+
+    .learn-badge.deep {
+      background: rgba(80, 180, 120, 0.07);
+      border-color: rgba(80, 180, 120, 0.22);
+      color: #2e7d52;
+    }
+
+    .learn-badge.rob {
+      background: rgba(180, 80, 80, 0.07);
+      border-color: rgba(180, 80, 80, 0.22);
+      color: #a03535;
+    }
+
+    .learn-card-icon {
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .learn-card-title {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    .learn-card-desc {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.75;
+      flex: 1;
+      margin: 0;
+    }
+
+    .learn-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    .learn-card-topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .learn-topic {
+      font-size: 0.67rem;
+      font-weight: 500;
+      padding: 0.18rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+    }
+
+    .learn-card-cta {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: color var(--transition);
+    }
+
+    .learn-card:hover .learn-card-cta {
+      color: var(--text);
+    }
+
     .skills-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -938,6 +1079,7 @@
       <li><a href="#research">Research</a></li>
       <li><a href="#projects">Projects</a></li>
       <li><a href="#skills">Skills</a></li>
+      <li><a href="#learning">Learning</a></li>
       <li><a href="#contact">Contact</a></li>
       <li><a href="CV_adrianferdinandjotham.pdf" target="_blank" class="nav-cv-btn">CV ↗</a></li>
     </ul>
@@ -1064,6 +1206,68 @@
             <p>2020 — 2024 · Bandung, Indonesia</p>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Learning Documentation ──────────────────────────── -->
+  <section id="learning">
+    <div class="container">
+      <span class="section-eyebrow fade-up">Notes &amp; Guides</span>
+      <h2 class="section-title fade-up">Learning Documentation</h2>
+      <p style="font-size:0.87rem;color:var(--text-muted);margin-bottom:2rem" class="fade-up">
+        In-depth explainers on topics I study and apply in my research — from foundational RL theory
+        to hands-on robotics application.
+      </p>
+      <div class="learning-grid">
+
+        <a href="dqn.html" class="learn-card fade-up" id="learn-dqn">
+          <div class="learn-card-eyebrow">
+            <span class="learn-badge deep">Deep RL</span>
+            <span class="learn-badge rl">Q-Learning</span>
+          </div>
+          <div class="learn-card-icon">🧠</div>
+          <div class="learn-card-title">From Q-Values to Deep Q-Networks</div>
+          <p class="learn-card-desc">
+            A comprehensive walkthrough of value-based reinforcement learning — starting from the
+            Bellman equation and tabular Q-learning, all the way to DQN, experience replay,
+            target networks, and Double DQN.
+          </p>
+          <div class="learn-card-meta">
+            <div class="learn-card-topics">
+              <span class="learn-topic">MDP</span>
+              <span class="learn-topic">Q-Learning</span>
+              <span class="learn-topic">DQN</span>
+              <span class="learn-topic">Neural Networks</span>
+            </div>
+            <span class="learn-card-cta">Read ↗</span>
+          </div>
+        </a>
+
+        <a href="rl-robotics.html" class="learn-card fade-up" id="learn-rl-robotics" style="transition-delay:0.1s">
+          <div class="learn-card-eyebrow">
+            <span class="learn-badge rob">Robotics</span>
+            <span class="learn-badge rl">RL</span>
+          </div>
+          <div class="learn-card-icon">🤖</div>
+          <div class="learn-card-title">Reinforcement Learning for Robotics</div>
+          <p class="learn-card-desc">
+            From the mathematical foundations of Markov Decision Processes to state-of-the-art
+            deep RL algorithms — PPO, SAC, and sim-to-real transfer — framed through the lens
+            of robotic control and UAV systems.
+          </p>
+          <div class="learn-card-meta">
+            <div class="learn-card-topics">
+              <span class="learn-topic">MDP</span>
+              <span class="learn-topic">PPO</span>
+              <span class="learn-topic">SAC</span>
+              <span class="learn-topic">Sim2Real</span>
+              <span class="learn-topic">UAV</span>
+            </div>
+            <span class="learn-card-cta">Read ↗</span>
+          </div>
+        </a>
+
       </div>
     </div>
   </section>

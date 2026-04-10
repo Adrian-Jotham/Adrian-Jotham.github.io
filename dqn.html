@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>From Q-Values to Deep Q-Networks</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --surface: #111318;
+            --surface2: #181c24;
+            --border: #1f2430;
+            --accent: #00e5a0;
+            --accent2: #4f9eff;
+            --accent3: #ff6b6b;
+            --accent4: #ffd166;
+            --text: #e8eaf2;
+            --muted: #6b7289;
+            --heading-font: 'Syne', sans-serif;
+            --body-font: 'DM Mono', monospace;
+            --serif: 'Instrument Serif', serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--body-font);
+            font-size: 13.5px;
+            line-height: 1.75;
+            min-height: 100vh;
+        }
+
+        /* ── Grid noise texture overlay ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0, 229, 160, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 90% 100%, rgba(79, 158, 255, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Layout ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+        }
+
+        .sidebar-logo {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-logo .tag {
+            font-family: var(--heading-font);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(0, 229, 160, 0.1);
+            border: 1px solid rgba(0, 229, 160, 0.25);
+            padding: 2px 8px;
+            border-radius: 2px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-logo h1 {
+            font-family: var(--heading-font);
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .nav-group {
+            padding: 0 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-group-label {
+            font-family: var(--heading-font);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 0.5rem 0.5rem 0.25rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 12px;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(0, 229, 160, 0.07);
+            color: var(--accent);
+        }
+
+        .nav-item .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        /* ── Main Content ── */
+        .main {
+            padding: 3rem 4rem;
+            max-width: 900px;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero-eyebrow {
+            font-family: var(--heading-font);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .hero-eyebrow::after {
+            content: '';
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.4;
+        }
+
+        .hero h1 {
+            font-family: var(--serif);
+            font-size: 52px;
+            line-height: 1.1;
+            color: var(--text);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+            font-style: normal;
+            font-family: var(--heading-font);
+            font-weight: 800;
+            font-size: 42px;
+        }
+
+        .hero-desc {
+            color: var(--muted);
+            font-size: 13px;
+            max-width: 520px;
+            line-height: 1.8;
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 11px;
+            color: var(--muted);
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+        }
+
+        .meta-chip .icon {
+            font-size: 10px;
+        }
+
+        /* ── Flow Diagram ── */
+        .flow-banner {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 3rem;
+            overflow-x: auto;
+        }
+
+        .flow-title {
+            font-family: var(--heading-font);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+        }
+
+        .flow-step {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-family: var(--heading-font);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            transition: border-color 0.2s;
+        }
+
+        .flow-step.highlight {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 229, 160, 0.06);
+        }
+
+        .flow-arrow {
+            color: var(--muted);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* ── Sections ── */
+        .section {
+            margin-bottom: 4rem;
+            animation: fadeIn 0.5s ease both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-number {
+            font-family: var(--heading-font);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(0, 229, 160, 0.1);
+            border: 1px solid rgba(0, 229, 160, 0.2);
+            padding: 2px 8px;
+            border-radius: 2px;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: var(--heading-font);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .subsection {
+            margin-bottom: 2rem;
+        }
+
+        .subsection-title {
+            font-family: var(--heading-font);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent2);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subsection-title::before {
+            content: '//';
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        p {
+            color: #b0b8cc;
+            margin-bottom: 0.75rem;
+            font-size: 13px;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        em {
+            color: var(--accent4);
+            font-style: italic;
+        }
+
+        /* ── Math blocks ── */
+        .math-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent2);
+            border-radius: 0 6px 6px 0;
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            font-family: var(--body-font);
+            font-size: 14px;
+            color: var(--accent2);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .math-block .math-label {
+            font-size: 10px;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 0.35rem;
+            white-space: normal;
+        }
+
+        .math-boxed {
+            border-color: var(--accent);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        /* ── Step sequence ── */
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 1.25rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            transition: background 0.15s;
+        }
+
+        .step-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-item:hover {
+            background: var(--surface2);
+        }
+
+        .step-num {
+            font-family: var(--heading-font);
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--accent);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0, 229, 160, 0.1);
+            border: 1px solid rgba(0, 229, 160, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content strong {
+            display: block;
+            margin-bottom: 0.2rem;
+            font-family: var(--heading-font);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .step-content p {
+            margin: 0;
+            font-size: 12px;
+        }
+
+        /* ── Tables ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        thead tr {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            padding: 0.6rem 1rem;
+            text-align: left;
+            font-family: var(--heading-font);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: #b0b8cc;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        td:first-child {
+            font-family: var(--body-font);
+            color: var(--accent2);
+        }
+
+        /* ── Code / Architecture block ── */
+        .arch-block {
+            background: #0d1017;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 1rem 0;
+            font-family: var(--body-font);
+            font-size: 12px;
+        }
+
+        .arch-header {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .arch-header-title {
+            font-family: var(--heading-font);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .arch-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .arch-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .arch-dots span:nth-child(1) {
+            background: #ff5f57;
+        }
+
+        .arch-dots span:nth-child(2) {
+            background: #febc2e;
+        }
+
+        .arch-dots span:nth-child(3) {
+            background: #28c840;
+        }
+
+        .arch-body {
+            padding: 1.25rem 1.5rem;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.65;
+            color: #7c8fad;
+        }
+
+        .arch-body .hl-green {
+            color: var(--accent);
+        }
+
+        .arch-body .hl-blue {
+            color: var(--accent2);
+        }
+
+        .arch-body .hl-yellow {
+            color: var(--accent4);
+        }
+
+        .arch-body .hl-red {
+            color: var(--accent3);
+        }
+
+        .arch-body .hl-dim {
+            color: #3a4560;
+        }
+
+        /* ── Algorithm block ── */
+        .algo-block {
+            background: #0d1017;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 1rem 0;
+            font-family: var(--body-font);
+            font-size: 12px;
+        }
+
+        .algo-header {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .algo-header-title {
+            font-family: var(--heading-font);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent4);
+        }
+
+        .algo-body {
+            padding: 1.25rem 1.5rem;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.8;
+            color: #7c8fad;
+        }
+
+        .algo-body .kw {
+            color: var(--accent3);
+            font-weight: 500;
+        }
+
+        .algo-body .fn {
+            color: var(--accent2);
+        }
+
+        .algo-body .val {
+            color: var(--accent4);
+        }
+
+        .algo-body .comment {
+            color: #3a4a6a;
+            font-style: italic;
+        }
+
+        .algo-body .label {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .algo-body .eq {
+            color: #e8eaf2;
+        }
+
+        /* ── Innovation cards ── */
+        .innovation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .innovation-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .innovation-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent2);
+        }
+
+        .innovation-card .card-icon {
+            font-size: 20px;
+            margin-bottom: 0.75rem;
+        }
+
+        .innovation-card .card-title {
+            font-family: var(--heading-font);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .innovation-card .card-problem {
+            font-size: 11px;
+            color: var(--accent3);
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .innovation-card p {
+            font-size: 12px;
+            margin: 0;
+        }
+
+        /* ── Summary chain ── */
+        .chain {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .chain::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 30px;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+            z-index: 0;
+        }
+
+        .chain-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chain-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg);
+            flex-shrink: 0;
+            margin-top: 4px;
+            margin-left: 11px;
+        }
+
+        .chain-dot.problem {
+            background: var(--accent3);
+        }
+
+        .chain-dot.solution {
+            background: var(--accent2);
+        }
+
+        .chain-text {
+            font-size: 13px;
+            color: #b0b8cc;
+        }
+
+        .chain-text strong {
+            font-family: var(--heading-font);
+            font-size: 12px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* ── Follow-up box ── */
+        .followup {
+            background: linear-gradient(135deg, rgba(0, 229, 160, 0.05), rgba(79, 158, 255, 0.05));
+            border: 1px solid rgba(0, 229, 160, 0.25);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .followup-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .followup-icon {
+            font-size: 18px;
+        }
+
+        .followup-title {
+            font-family: var(--heading-font);
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+        }
+
+        .followup p {
+            color: #b0b8cc;
+            font-size: 13px;
+            margin-bottom: 0.5rem;
+        }
+
+        .followup blockquote {
+            border-left: 2px solid var(--accent);
+            padding-left: 1rem;
+            margin: 0.75rem 0;
+            color: var(--text);
+            font-style: italic;
+            font-family: var(--serif);
+            font-size: 15px;
+        }
+
+        /* ── Inline code ── */
+        code {
+            font-family: var(--body-font);
+            font-size: 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 1px 6px;
+            border-radius: 3px;
+            color: var(--accent2);
+        }
+
+        /* ── Highlight callout ── */
+        .callout {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent4);
+            border-radius: 0 6px 6px 0;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            font-size: 12.5px;
+            color: #b0b8cc;
+        }
+
+        .callout strong {
+            color: var(--accent4);
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 800px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                padding: 2rem 1.5rem;
+            }
+
+            .innovation-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero h1 span {
+                font-size: 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- ── Sidebar ── -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="tag">RL Theory</div>
+                <h1>Q-Values → DQN</h1>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Foundations</div>
+                <a class="nav-item" href="#part1"><span class="dot"></span>MDP & Q-Value</a>
+                <a class="nav-item" href="#part2"><span class="dot"></span>Bellman Equation</a>
+                <a class="nav-item" href="#part3"><span class="dot"></span>Q-Learning</a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Deep RL</div>
+                <a class="nav-item" href="#part4"><span class="dot"></span>DQN Architecture</a>
+                <a class="nav-item" href="#part5"><span class="dot"></span>Key Innovations</a>
+                <a class="nav-item" href="#part6"><span class="dot"></span>Full Algorithm</a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Summary</div>
+                <a class="nav-item" href="#summary"><span class="dot"></span>Derivation Chain</a>
+                <a class="nav-item" href="#followup"><span class="dot"></span>Follow-up</a>
+            </div>
+        </aside>
+
+        <!-- ── Main ── -->
+        <main class="main">
+
+            <!-- Hero -->
+            <div class="hero">
+                <div class="hero-eyebrow">Deep Reinforcement Learning</div>
+                <h1>From<br><span>Q-Values</span><br>to DQN</h1>
+                <p class="hero-desc">
+                    A complete sequential derivation — from the Bellman equation through tabular Q-learning to the Deep
+                    Q-Network architecture used to beat Atari games.
+                </p>
+                <div class="hero-meta">
+                    <div class="meta-chip"><span class="icon">📐</span> Math Derivations</div>
+                    <div class="meta-chip"><span class="icon">🧠</span> Neural Architecture</div>
+                    <div class="meta-chip"><span class="icon">⚡</span> DQN Algorithm</div>
+                    <div class="meta-chip"><span class="icon">🎮</span> Atari (DeepMind 2015)</div>
+                </div>
+            </div>
+
+            <!-- Flow -->
+            <div class="flow-banner">
+                <div class="flow-title">Derivation Path</div>
+                <div class="flow-steps">
+                    <div class="flow-step">MDP</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">Q-Value</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">Bellman</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">Optimal Q*</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">Q-Learning</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step highlight">DQN ✓</div>
+                </div>
+            </div>
+
+            <!-- ══ PART 1 ══ -->
+            <section class="section" id="part1">
+                <div class="section-header">
+                    <span class="section-number">PART 01</span>
+                    <h2 class="section-title">The Foundation — Q-Values</h2>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">The MDP Framework</div>
+                    <p>Every Q-value lives inside a <strong>Markov Decision Process</strong>. The agent exists in a
+                        world described by five components:</p>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>s</td>
+                                    <td>State</td>
+                                    <td>Where the agent is / what it observes</td>
+                                </tr>
+                                <tr>
+                                    <td>a</td>
+                                    <td>Action</td>
+                                    <td>What the agent can do at each step</td>
+                                </tr>
+                                <tr>
+                                    <td>r</td>
+                                    <td>Reward</td>
+                                    <td>Scalar feedback signal from the environment</td>
+                                </tr>
+                                <tr>
+                                    <td>s'</td>
+                                    <td>Next State</td>
+                                    <td>State after taking action a in state s</td>
+                                </tr>
+                                <tr>
+                                    <td>π</td>
+                                    <td>Policy</td>
+                                    <td>Strategy mapping states to actions</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Defining the Q-Value</div>
+                    <p>The <strong>Q-value</strong> (action-value function) answers one precise question:</p>
+
+                    <div class="callout">
+                        <strong>"If I'm in state s, take action a, and follow policy π forever — what is my expected
+                            cumulative reward?"</strong>
+                    </div>
+
+                    <div class="math-block">
+                        <span class="math-label">Q-VALUE DEFINITION</span>
+                        Q<sup>π</sup>(s, a) = 𝔼<sub>π</sub> [ Σ<sub>t=0</sub><sup>∞</sup> γ<sup>t</sup> · r<sub>t</sub>
+                        | s<sub>0</sub>=s, a<sub>0</sub>=a ]
+                    </div>
+
+                    <div class="table-wrap" style="margin-top:1rem">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>γ (gamma)</td>
+                                    <td>Discount factor (0–1): encodes that future rewards are worth less than immediate
+                                        ones</td>
+                                </tr>
+                                <tr>
+                                    <td>r<sub>t</sub></td>
+                                    <td>Reward received at timestep t</td>
+                                </tr>
+                                <tr>
+                                    <td>𝔼<sub>π</sub></td>
+                                    <td>Expected value when following policy π</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══ PART 2 ══ -->
+            <section class="section" id="part2">
+                <div class="section-header">
+                    <span class="section-number">PART 02</span>
+                    <h2 class="section-title">Deriving the Bellman Equation</h2>
+                </div>
+
+                <p>This is the core derivation. We decompose the infinite sum into a <strong>recursive
+                        structure</strong>.</p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <strong>Expand the infinite sum</strong>
+                            <div class="math-block" style="margin-top:0.5rem">Q<sup>π</sup>(s,a) = 𝔼<sub>π</sub> [
+                                r<sub>0</sub> + γr<sub>1</sub> + γ²r<sub>2</sub> + ··· | s<sub>0</sub>=s,
+                                a<sub>0</sub>=a ]</div>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <strong>Factor out the first reward</strong>
+                            <div class="math-block" style="margin-top:0.5rem">= 𝔼<sub>π</sub> [ r<sub>0</sub> + γ ·
+                                (r<sub>1</sub> + γr<sub>2</sub> + ···) | s<sub>0</sub>=s, a<sub>0</sub>=a ]</div>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <strong>Recognize the recursive structure</strong>
+                            <p>The term in parentheses is the return from the <em>next state s'</em>. Replace it:</p>
+                            <div class="math-block" style="margin-top:0.5rem">= 𝔼<sub>π</sub> [ r<sub>0</sub> + γ ·
+                                V<sup>π</sup>(s') ] where V<sup>π</sup>(s') = 𝔼<sub>a'~π</sub>[Q<sup>π</sup>(s',a')]
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">4</div>
+                        <div class="step-content">
+                            <strong>Bellman Equation for Q</strong>
+                            <div class="math-block math-boxed" style="margin-top:0.5rem">Q<sup>π</sup>(s,a) =
+                                𝔼<sub>s'</sub> [ r + γ · Σ<sub>a'</sub> π(a'|s') · Q<sup>π</sup>(s',a') ]</div>
+                            <p style="margin-top:0.5rem">Reading this: <em>Q-value now = immediate reward + discounted
+                                    expected Q-value of next state under policy π</em></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══ PART 3 ══ -->
+            <section class="section" id="part3">
+                <div class="section-header">
+                    <span class="section-number">PART 03</span>
+                    <h2 class="section-title">Q-Learning & The Scalability Problem</h2>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Optimal Bellman Equation</div>
+                    <p>We don't want any policy — we want the <strong>optimal</strong> one. When acting greedily (always
+                        choosing the best next action):</p>
+
+                    <div class="math-block math-boxed">
+                        <span class="math-label">OPTIMAL BELLMAN (Q*)</span>
+                        Q*(s,a) = 𝔼<sub>s'</sub> [ r + γ · max<sub>a'</sub> Q*(s',a') ]
+                    </div>
+
+                    <p>The optimal policy then becomes trivially: <strong>π*(s) = argmax<sub>a</sub> Q*(s,a)</strong>
+                    </p>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Tabular Q-Learning Update Rule</div>
+                    <p>In classical Q-learning we store Q-values in a <strong>table</strong> and refine them with every
+                        experience:</p>
+
+                    <div class="math-block">
+                        <span class="math-label">TD UPDATE RULE</span>
+                        Q(s,a) ← Q(s,a) + α · [ r + γ · max<sub>a'</sub> Q(s',a') − Q(s,a) ]
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Name</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>α</td>
+                                    <td>Learning rate</td>
+                                    <td>How quickly to update the estimate</td>
+                                </tr>
+                                <tr>
+                                    <td>r + γ·max Q(s',a')</td>
+                                    <td>TD Target</td>
+                                    <td>What Q should be based on new evidence</td>
+                                </tr>
+                                <tr>
+                                    <td>Q(s,a)</td>
+                                    <td>Current estimate</td>
+                                    <td>What we currently believe Q is</td>
+                                </tr>
+                                <tr>
+                                    <td>δ = TD Target − Q(s,a)</td>
+                                    <td>TD Error</td>
+                                    <td>The "surprise" — how wrong we were</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Why Tabular Q-Learning Breaks</div>
+                    <div class="callout">
+                        <strong>Problem:</strong> Atari Pong state = raw pixels = 210 × 160 × 3 ≈ 100,000 dimensions.
+                        The number of unique states is astronomically large — you cannot have a table row for each one.
+                        We need to <em>generalize across states</em>.
+                    </div>
+                    <p>This is the precise motivation for approximating Q with a neural network.</p>
+                </div>
+            </section>
+
+            <!-- ══ PART 4 ══ -->
+            <section class="section" id="part4">
+                <div class="section-header">
+                    <span class="section-number">PART 04</span>
+                    <h2 class="section-title">DQN Neural Network Architecture</h2>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Core Idea: Replace the Table</div>
+                    <p>Parameterize Q with a neural network <strong>Q(s, a; θ)</strong>. The network takes a state as
+                        input and outputs <strong>Q-values for all actions simultaneously</strong> in a single forward
+                        pass.</p>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Atari DQN Architecture (DeepMind 2015)</div>
+
+                    <div class="arch-block">
+                        <div class="arch-header">
+                            <div class="arch-dots"><span></span><span></span><span></span></div>
+                            <div class="arch-header-title">DQN Architecture — Atari</div>
+                        </div>
+                        <div class="arch-body"><span class="hl-yellow">Input</span>: 4 stacked grayscale frames <span
+                                class="hl-dim">(84 × 84 × 4)</span>
+                            │
+                            ▼
+                            ┌─────────────────────────────────────────────────────┐
+                            │ <span class="hl-green">Conv Layer 1</span> │ 32 filters, 8×8 kernel, stride 4 │ → <span
+                                class="hl-dim">(20 × 20 × 32)</span>
+                            │ Activation: ReLU │
+                            └─────────────────────────────────────────────────────┘
+                            │
+                            ▼
+                            ┌─────────────────────────────────────────────────────┐
+                            │ <span class="hl-green">Conv Layer 2</span> │ 64 filters, 4×4 kernel, stride 2 │ → <span
+                                class="hl-dim">(9 × 9 × 64)</span>
+                            │ Activation: ReLU │
+                            └─────────────────────────────────────────────────────┘
+                            │
+                            ▼
+                            ┌─────────────────────────────────────────────────────┐
+                            │ <span class="hl-green">Conv Layer 3</span> │ 64 filters, 3×3 kernel, stride 1 │ → <span
+                                class="hl-dim">(7 × 7 × 64)</span>
+                            │ Activation: ReLU │
+                            └─────────────────────────────────────────────────────┘
+                            │
+                            ▼ Flatten → <span class="hl-dim">3136 units</span>
+                            │
+                            ┌─────────────────────────────────────────────────────┐
+                            │ <span class="hl-blue">Fully Connected</span> │ 512 units │
+                            │ Activation: ReLU │
+                            └─────────────────────────────────────────────────────┘
+                            │
+                            ▼
+                            ┌─────────────────────────────────────────────────────┐
+                            │ <span class="hl-red">Output Layer</span> │ N units (one Q-value per action) │
+                            │ No activation (raw Q-values, can be negative) │
+                            └─────────────────────────────────────────────────────┘</div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">Design Choices Explained</div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Choice</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Convolutional layers</td>
+                                    <td>State is an image — CNNs automatically extract spatial features (edges, shapes,
+                                        motion blur) without hand-engineering</td>
+                                </tr>
+                                <tr>
+                                    <td>4 stacked frames</td>
+                                    <td>A single frame has no velocity. 4 consecutive frames give the network a sense of
+                                        direction and speed (e.g., which way the ball is moving in Pong)</td>
+                                </tr>
+                                <tr>
+                                    <td>Grayscale + 84×84</td>
+                                    <td>Reduces input dimensionality significantly while preserving sufficient visual
+                                        information</td>
+                                </tr>
+                                <tr>
+                                    <td>ReLU activations</td>
+                                    <td>Avoids vanishing gradients; computationally cheap; works well with convolutional
+                                        networks</td>
+                                </tr>
+                                <tr>
+                                    <td>No output activation</td>
+                                    <td>Q-values are unbounded real numbers — a sigmoid or softmax would incorrectly
+                                        constrain them</td>
+                                </tr>
+                                <tr>
+                                    <td>Output: one node per action</td>
+                                    <td>Computes Q(s,a) for all actions in one forward pass — vastly more efficient than
+                                        separate forward passes per action</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══ PART 5 ══ -->
+            <section class="section" id="part5">
+                <div class="section-header">
+                    <span class="section-number">PART 05</span>
+                    <h2 class="section-title">The Two Critical DQN Innovations</h2>
+                </div>
+
+                <p>Naively plugging a neural net into Q-learning <strong>diverges catastrophically</strong>. DeepMind
+                    solved this with two breakthroughs:</p>
+
+                <div class="innovation-grid">
+                    <div class="innovation-card">
+                        <div class="card-icon">🔁</div>
+                        <div class="card-title">Experience Replay</div>
+                        <div class="card-problem">Problem: Correlated data</div>
+                        <p>Consecutive frames are nearly identical. Training on them sequentially causes the network to
+                            overfit recent experience and <strong>catastrophically forget</strong> the past.</p>
+                        <br>
+                        <p><strong>Solution:</strong> Store transitions (s, a, r, s') in a <strong>Replay
+                                Buffer</strong> of ~1M entries. At each step, sample a <em>random mini-batch</em>. This
+                            breaks correlation and allows each experience to be reused multiple times.</p>
+                    </div>
+                    <div class="innovation-card">
+                        <div class="card-icon">🎯</div>
+                        <div class="card-title">Target Network</div>
+                        <div class="card-problem">Problem: Moving targets</div>
+                        <p>The TD target uses the same network being updated. Both prediction and target shift every
+                            step — like chasing a moving target. This causes <strong>oscillation and
+                                divergence</strong>.</p>
+                        <br>
+                        <p><strong>Solution:</strong> Keep a separate <strong>frozen target network θ⁻</strong>. Update
+                            it only every C steps (e.g., 10,000). The main network trains against this stable reference.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="subsection" style="margin-top:1.5rem">
+                    <div class="subsection-title">Target Network — Two Networks Compared</div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Network</th>
+                                    <th>Role</th>
+                                    <th>Updated How?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Online Network θ</td>
+                                    <td>Makes predictions, selects actions</td>
+                                    <td>Every step via gradient descent</td>
+                                </tr>
+                                <tr>
+                                    <td>Target Network θ⁻</td>
+                                    <td>Computes TD targets</td>
+                                    <td>Frozen; copied from θ every C steps</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="math-block" style="margin-top:1rem">
+                        <span class="math-label">DQN LOSS FUNCTION</span>
+                        ℒ(θ) = 𝔼<sub>(s,a,r,s')~D</sub> [ ( r + γ·max<sub>a'</sub> Q(s',a'; θ⁻) − Q(s,a; θ) )² ]
+                    </div>
+                    <p style="font-size:12px;color:var(--muted)">Note: θ⁻ is frozen during the gradient step. Only θ
+                        (online network) receives the gradient.</p>
+                </div>
+            </section>
+
+            <!-- ══ PART 6 ══ -->
+            <section class="section" id="part6">
+                <div class="section-header">
+                    <span class="section-number">PART 06</span>
+                    <h2 class="section-title">Full DQN Algorithm</h2>
+                </div>
+
+                <div class="algo-block">
+                    <div class="algo-header">
+                        <div class="arch-dots"><span></span><span></span><span></span></div>
+                        <div class="algo-header-title">DQN — Complete Pseudocode</div>
+                    </div>
+                    <div class="algo-body"><span class="kw">INITIALIZE:</span>
+                        Online network Q(s,a; <span class="val">θ</span>) with random weights θ
+                        Target network Q(s,a; <span class="val">θ⁻</span>) with θ⁻ ← θ
+                        Replay buffer D (capacity <span class="val">N</span> ≈ 1,000,000)
+                        ε = <span class="val">1.0</span> <span class="comment">// start fully random (explore)</span>
+
+                        <span class="kw">FOR EACH</span> episode:
+                        s ← initial state <span class="comment">// preprocess: grayscale → resize → stack 4
+                            frames</span>
+
+                        <span class="kw">FOR EACH</span> timestep t:
+
+                        <span class="label">── ACTION SELECTION (ε-greedy) ─────────────────────────</span>
+                        <span class="kw">if</span> random() < ε: a ← <span class="fn">random_action()</span> <span
+                                class="comment">// explore</span>
+                            <span class="kw">else</span>:
+                            a ← <span class="fn">argmax</span><sub>a</sub> Q(s, a; <span class="val">θ</span>) <span
+                                class="comment">// exploit</span>
+
+                            <span class="label">── ENVIRONMENT STEP ────────────────────────────────────</span>
+                            r, s' ← <span class="fn">env.step</span>(a)
+                            <span class="fn">push</span>(D, (s, a, r, s')) <span class="comment">// store in replay
+                                buffer</span>
+                            s ← s'
+
+                            <span class="label">── SAMPLE & TRAIN ──────────────────────────────────────</span>
+                            batch ← <span class="fn">random_sample</span>(D, size=<span class="val">32</span>)
+
+                            <span class="kw">for</span> each (s, a, r, s') in batch:
+                            <span class="kw">if</span> s' is terminal:
+                            y = r
+                            <span class="kw">else</span>:
+                            y = r + γ · <span class="fn">max</span><sub>a'</sub> Q(s', a'; <span class="val">θ⁻</span>)
+                            <span class="comment">// target network!</span>
+
+                            loss = ( y − Q(s, a; <span class="val">θ</span>) )²
+                            <span class="fn">gradient_descent</span>(loss, θ)
+
+                            <span class="label">── TARGET SYNC ─────────────────────────────────────────</span>
+                            <span class="kw">if</span> t % C == <span class="val">0</span>:
+                            θ⁻ ← θ <span class="comment">// copy weights every C steps</span>
+
+                            <span class="label">── EPSILON DECAY ───────────────────────────────────────</span>
+                            ε ← <span class="fn">max</span>(<span class="val">0.1</span>, ε − <span
+                                class="val">decay_rate</span>) <span class="comment">// anneal from 1.0 → 0.1</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══ SUMMARY ══ -->
+            <section class="section" id="summary">
+                <div class="section-header">
+                    <span class="section-number">SUMMARY</span>
+                    <h2 class="section-title">The Full Derivation Chain</h2>
+                </div>
+
+                <div class="chain">
+                    <div class="chain-item">
+                        <div class="chain-dot"></div>
+                        <div class="chain-text"><strong>MDP Framework</strong>Define the world: states, actions,
+                            rewards, transitions, policy</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot"></div>
+                        <div class="chain-text"><strong>Q-Value Definition</strong>Expected cumulative discounted reward
+                            from (s, a) under policy π</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot"></div>
+                        <div class="chain-text"><strong>Bellman Equation</strong>Recursive decomposition: Q(s,a) = r + γ
+                            · V(s')</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot"></div>
+                        <div class="chain-text"><strong>Optimal Bellman (Q*)</strong>Greedy maximization over future
+                            actions; defines the optimal policy</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot"></div>
+                        <div class="chain-text"><strong>Tabular Q-Learning</strong>TD update rule; iteratively refine
+                            Q-values in a lookup table</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot problem"></div>
+                        <div class="chain-text"><strong>❌ Scalability Problem</strong>State space too large for a table
+                            (e.g., raw pixel inputs)</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot solution"></div>
+                        <div class="chain-text"><strong>Neural Network Approximation</strong>Replace table with Q(s,a;
+                            θ) — a deep CNN parameterized by θ</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot problem"></div>
+                        <div class="chain-text"><strong>❌ Training Instability</strong>Correlated data + moving targets
+                            → divergence</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot solution"></div>
+                        <div class="chain-text"><strong>DQN Fix: Experience Replay + Target Network</strong>Stabilize
+                            training with random batches and a frozen target</div>
+                    </div>
+                    <div class="chain-item">
+                        <div class="chain-dot" style="background:var(--accent4)"></div>
+                        <div class="chain-text"><strong>Deep Q-Network ✓</strong>Superhuman performance on 49 Atari
+                            games (DeepMind, 2015)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══ FOLLOW-UP ══ -->
+            <div class="followup" id="followup">
+                <div class="followup-header">
+                    <div class="followup-icon">🔍</div>
+                    <div class="followup-title">Follow-up Question — Deepen Your Understanding</div>
+                </div>
+                <p>DQN's output head is a simple linear layer producing <strong>Q(s,a) for every action</strong> from a
+                    single forward pass. A later improvement called <strong>Dueling DQN</strong> splits this head into
+                    two separate streams:</p>
+
+                <div class="table-wrap" style="margin:0.75rem 0">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Stream</th>
+                                <th>Estimates</th>
+                                <th>Notation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Value stream</td>
+                                <td>How good is this state, regardless of action?</td>
+                                <td>V(s)</td>
+                            </tr>
+                            <tr>
+                                <td>Advantage stream</td>
+                                <td>How much better is action a vs. average?</td>
+                                <td>A(s,a)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>The two are combined as: <strong>Q(s,a) = V(s) + A(s,a) − mean<sub>a</sub>A(s,a)</strong></p>
+
+                <blockquote>
+                    "Why might separating V(s) and A(s,a) be beneficial? In what kind of states would knowing V(s) alone
+                    — without caring which specific action to take — be most useful?"
+                </blockquote>
+
+                <p style="color:var(--muted);font-size:12px">Thinking through this question will lead you naturally into
+                    understanding <strong>Dueling DQN</strong> and the concept of <strong>advantage functions</strong> —
+                    the next step in the DQN evolution.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Active nav highlighting
+        const sections = document.querySelectorAll('section[id], div[id]');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navItems.forEach(item => item.classList.remove('active'));
+                    const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+                    if (active) active.classList.add('active');
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(s => observer.observe(s));
+
+        // Stagger section animations
+        document.querySelectorAll('.section').forEach((s, i) => {
+            s.style.animationDelay = `${i * 0.05}s`;
+        });
+    </script>
+
+</body>
+
+</html>
