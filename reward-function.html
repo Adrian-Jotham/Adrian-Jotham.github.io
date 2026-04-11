@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reward Function Design in Robotics RL</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --surface: #13161e;
+            --surface2: #1a1e28;
+            --surface3: #202534;
+            --border: rgba(255, 255, 255, 0.07);
+            --border2: rgba(255, 255, 255, 0.12);
+            --text: #e8eaf0;
+            --muted: #7a7f96;
+            --accent: #5b7fff;
+            --accent2: #38d9a9;
+            --accent3: #ff9f43;
+            --accent4: #ff6b6b;
+            --purple: #a78bfa;
+            --mono: 'IBM Plex Mono', monospace;
+            --display: 'Syne', sans-serif;
+            --body: 'DM Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--body);
+            font-size: 15px;
+            line-height: 1.75;
+            font-weight: 300;
+        }
+
+        /* ── LAYOUT ── */
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 28px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo .tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .sidebar-logo h1 {
+            font-family: var(--display);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .nav-section {
+            margin-bottom: 8px;
+        }
+
+        .nav-section-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            text-transform: uppercase;
+            padding: 0 24px 6px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 24px;
+            font-size: 13px;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s, background 0.15s;
+            border-left: 2px solid transparent;
+            font-weight: 400;
+        }
+
+        .nav-link:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: rgba(91, 127, 255, 0.07);
+        }
+
+        .nav-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            flex: 1;
+            min-width: 0;
+            padding: 0 0 80px;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(135deg, #0d0f14 0%, #111520 40%, #0f1520 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 64px 72px 56px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(91, 127, 255, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            left: 200px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(56, 217, 169, 0.07) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero-eyebrow::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .hero h1 {
+            font-family: var(--display);
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #fff;
+            margin-bottom: 18px;
+            max-width: 600px;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+        }
+
+        .hero-desc {
+            font-size: 16px;
+            color: var(--muted);
+            max-width: 520px;
+            line-height: 1.7;
+            margin-bottom: 32px;
+            font-weight: 300;
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+        }
+
+        .meta-chip .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .meta-chip .dot.blue {
+            background: var(--accent);
+        }
+
+        .meta-chip .dot.green {
+            background: var(--accent2);
+        }
+
+        .meta-chip .dot.orange {
+            background: var(--accent3);
+        }
+
+        /* ── CONTENT AREA ── */
+        .content {
+            padding: 0 72px;
+            max-width: 860px;
+        }
+
+        /* ── SECTIONS ── */
+        .doc-section {
+            padding: 56px 0 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-num {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .section-header h2 {
+            font-family: var(--display);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .section-header h3 {
+            font-family: var(--display);
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 32px 0 14px;
+        }
+
+        p {
+            color: #b0b5c8;
+            margin-bottom: 14px;
+            font-weight: 300;
+        }
+
+        p strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ── CALLOUT BOXES ── */
+        .callout {
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin: 22px 0;
+            border-left: 3px solid;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .callout-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .callout p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .callout.info {
+            background: rgba(91, 127, 255, 0.07);
+            border-color: var(--accent);
+        }
+
+        .callout.info .callout-title {
+            color: var(--accent);
+        }
+
+        .callout.warning {
+            background: rgba(255, 159, 67, 0.07);
+            border-color: var(--accent3);
+        }
+
+        .callout.warning .callout-title {
+            color: var(--accent3);
+        }
+
+        .callout.danger {
+            background: rgba(255, 107, 107, 0.07);
+            border-color: var(--accent4);
+        }
+
+        .callout.danger .callout-title {
+            color: var(--accent4);
+        }
+
+        .callout.success {
+            background: rgba(56, 217, 169, 0.07);
+            border-color: var(--accent2);
+        }
+
+        .callout.success .callout-title {
+            color: var(--accent2);
+        }
+
+        /* ── CODE BLOCKS ── */
+        .code-block {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 18px;
+            background: var(--surface3);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-lang {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .code-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        pre {
+            padding: 20px 22px;
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: 13px;
+            line-height: 1.7;
+            color: #c8cfe8;
+        }
+
+        .kw {
+            color: var(--purple);
+        }
+
+        .fn {
+            color: var(--accent);
+        }
+
+        .str {
+            color: var(--accent2);
+        }
+
+        .num {
+            color: var(--accent3);
+        }
+
+        .cmt {
+            color: #4a5070;
+            font-style: italic;
+        }
+
+        .var {
+            color: #e8b86d;
+        }
+
+        /* ── FORMULA DISPLAY ── */
+        .formula-card {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .formula-main {
+            font-family: var(--mono);
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 20px;
+            letter-spacing: 0.02em;
+        }
+
+        .formula-main .plus {
+            color: var(--accent2);
+        }
+
+        .formula-main .minus {
+            color: var(--accent4);
+        }
+
+        .formula-main .coef {
+            color: var(--accent3);
+        }
+
+        .formula-main .var {
+            color: var(--accent);
+        }
+
+        .formula-breakdown {
+            display: flex;
+            gap: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-top: 8px;
+        }
+
+        .fb-item {
+            flex: 1;
+            padding: 12px 14px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+        }
+
+        .fb-item:last-child {
+            border-right: none;
+        }
+
+        .fb-term {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .fb-desc {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .fb-item.vel {
+            background: rgba(91, 127, 255, 0.06);
+        }
+
+        .fb-item.vel .fb-term {
+            color: var(--accent);
+        }
+
+        .fb-item.ctrl {
+            background: rgba(255, 159, 67, 0.06);
+        }
+
+        .fb-item.ctrl .fb-term {
+            color: var(--accent3);
+        }
+
+        .fb-item.alive {
+            background: rgba(56, 217, 169, 0.06);
+        }
+
+        .fb-item.alive .fb-term {
+            color: var(--accent2);
+        }
+
+        .fb-item.impact {
+            background: rgba(255, 107, 107, 0.06);
+        }
+
+        .fb-item.impact .fb-term {
+            color: var(--accent4);
+        }
+
+        /* ── TABLE ── */
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .doc-table th {
+            text-align: left;
+            padding: 10px 16px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            background: var(--surface3);
+            border-bottom: 1px solid var(--border2);
+            font-weight: 500;
+        }
+
+        .doc-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: #b0b5c8;
+            vertical-align: top;
+        }
+
+        .doc-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .doc-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .doc-table .mono {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent2);
+        }
+
+        .doc-table .badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-family: var(--mono);
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background: rgba(91, 127, 255, 0.15);
+            color: var(--accent);
+        }
+
+        .badge-green {
+            background: rgba(56, 217, 169, 0.15);
+            color: var(--accent2);
+        }
+
+        .badge-orange {
+            background: rgba(255, 159, 67, 0.15);
+            color: var(--accent3);
+        }
+
+        .badge-red {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--accent4);
+        }
+
+        .badge-purple {
+            background: rgba(167, 139, 250, 0.15);
+            color: var(--purple);
+        }
+
+        /* ── REWARD HACK EXAMPLES ── */
+        .hack-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .hack-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 20px;
+        }
+
+        .hack-card .hack-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .hack-card.bad {
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .hack-card.bad .hack-label {
+            color: var(--accent4);
+        }
+
+        .hack-card.good {
+            border-color: rgba(56, 217, 169, 0.3);
+        }
+
+        .hack-card.good .hack-label {
+            color: var(--accent2);
+        }
+
+        .hack-card .hack-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .hack-card p {
+            font-size: 13px;
+            margin: 0;
+        }
+
+        /* ── PROCESS STEPS ── */
+        .steps {
+            margin: 24px 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 17px;
+            top: 42px;
+            width: 1px;
+            bottom: -10px;
+            background: var(--border2);
+        }
+
+        .step-num {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 500;
+            z-index: 1;
+        }
+
+        .step-body {
+            padding-top: 6px;
+        }
+
+        .step-body h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 5px;
+            font-family: var(--display);
+        }
+
+        .step-body p {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        /* ── DENSE VS SPARSE ── */
+        .compare-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .compare-col {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .compare-col h4 {
+            font-family: var(--display);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .compare-col.sparse h4 {
+            color: var(--accent);
+        }
+
+        .compare-col.dense h4 {
+            color: var(--accent3);
+        }
+
+        .compare-col ul {
+            list-style: none;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .compare-col ul li {
+            padding: 5px 0;
+            display: flex;
+            gap: 9px;
+            align-items: baseline;
+        }
+
+        .compare-col ul li::before {
+            content: '—';
+            color: var(--border2);
+            flex-shrink: 0;
+        }
+
+        /* ── MULTI-OBJ FORMULA ── */
+        .weight-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .weight-row:last-child {
+            border-bottom: none;
+        }
+
+        .w-term {
+            font-family: var(--mono);
+            font-size: 13px;
+            min-width: 140px;
+        }
+
+        .w-range {
+            flex: 1;
+        }
+
+        .w-desc {
+            font-size: 12px;
+            color: var(--muted);
+            min-width: 160px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--surface3);
+            outline: none;
+            border: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        /* ── CHART CANVAS ── */
+        canvas {
+            display: block;
+        }
+
+        /* ── FOOTER ── */
+        .doc-footer {
+            margin-top: 64px;
+            padding: 32px 72px;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2a2f40;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .hero,
+            .content,
+            .doc-footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .hack-grid,
+            .compare-cols {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <div class="tag">Robotics · RL</div>
+                <h1>Reward Function Design</h1>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-label">Overview</div>
+                <a href="#intro" class="nav-link active"><span class="nav-dot"></span>Introduction</a>
+                <a href="#core-principles" class="nav-link"><span class="nav-dot"></span>Core Principles</a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-label">Concepts</div>
+                <a href="#reward-types" class="nav-link"><span class="nav-dot"></span>Sparse vs Dense</a>
+                <a href="#reward-hacking" class="nav-link"><span class="nav-dot"></span>Reward Hacking</a>
+                <a href="#multi-objective" class="nav-link"><span class="nav-dot"></span>Multi-Objective</a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-label">Example</div>
+                <a href="#halfcheetah" class="nav-link"><span class="nav-dot"></span>Half-Cheetah</a>
+                <a href="#formula" class="nav-link"><span class="nav-dot"></span>Formula Breakdown</a>
+                <a href="#presets" class="nav-link"><span class="nav-dot"></span>Behavior Presets</a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-label">Reference</div>
+                <a href="#process" class="nav-link"><span class="nav-dot"></span>Design Process</a>
+                <a href="#pitfalls" class="nav-link"><span class="nav-dot"></span>Common Pitfalls</a>
+            </div>
+        </nav>
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- HERO -->
+            <div class="hero">
+                <div class="hero-eyebrow">Documentation</div>
+                <h1>Reward Function Design<br><span>in Robotics RL</span></h1>
+                <p class="hero-desc">A deep technical guide to designing reward signals that teach robots the behaviors
+                    you actually want — and avoid the ones you don't.</p>
+                <div class="hero-meta">
+                    <div class="meta-chip"><span class="dot blue"></span>Reinforcement Learning</div>
+                    <div class="meta-chip"><span class="dot green"></span>MuJoCo / OpenAI Gym</div>
+                    <div class="meta-chip"><span class="dot orange"></span>Half-Cheetah Example</div>
+                </div>
+            </div>
+
+            <div class="content">
+
+                <!-- 1. INTRODUCTION -->
+                <section class="doc-section" id="intro">
+                    <div class="section-header">
+                        <span class="section-num">01</span>
+                        <h2>Introduction</h2>
+                    </div>
+
+                    <p>In reinforcement learning, an agent (the robot) observes a <strong>state</strong> <code
+                            style="font-family:var(--mono);font-size:12px;color:var(--accent2)">s</code>, takes an
+                        <strong>action</strong> <code
+                            style="font-family:var(--mono);font-size:12px;color:var(--accent2)">a</code>, transitions to
+                        a new state <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">s′</code>,
+                        and receives a <strong>reward scalar</strong> from the environment. The agent's single objective
+                        is to maximize the expected sum of discounted rewards over time — the <em>return</em>.</p>
+
+                    <p>The reward function <strong>R(s, a, s′)</strong> is the most influential design decision in a
+                        robotics RL system. It encodes what success means. Get it right and an intelligent behavior
+                        emerges. Get it wrong and the agent exploits loopholes you never imagined.</p>
+
+                    <div class="callout info">
+                        <div class="callout-title">Key Insight</div>
+                        <p>The agent will find <em>exactly</em> what you measure — not what you intend. This is the
+                            fundamental challenge of reward design. The robot is a perfect optimizer; it will find every
+                            gap between your reward proxy and your true goal.</p>
+                    </div>
+
+                    <h3>The RL Loop</h3>
+                    <p>Every robotics RL system follows this cycle: the robot observes the world, chooses an action
+                        through its policy π(a|s), receives a reward signal, and updates its policy via a learning
+                        algorithm (PPO, SAC, TD3, etc.).</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">Python</span>
+                            <span class="code-label">Basic RL loop</span>
+                        </div>
+                        <pre><span class="cmt"># The fundamental reward signal flow</span>
+<span class="kw">def</span> <span class="fn">reward_function</span>(state, action, next_state):
+    <span class="cmt"># Define what "good" behavior means</span>
+    r_task    = <span class="num">1.0</span> * forward_velocity(next_state)
+    r_energy  = <span class="num">-0.1</span> * np.sum(action ** <span class="num">2</span>)
+    r_survive = <span class="num">1.0</span> * is_alive(next_state)
+    r_safety  = <span class="num">-0.05</span> * contact_forces(next_state)
+    <span class="kw">return</span> r_task + r_energy + r_survive + r_safety
+
+<span class="cmt"># Training loop</span>
+<span class="kw">for</span> episode <span class="kw">in</span> range(num_episodes):
+    state = env.reset()
+    <span class="kw">while</span> <span class="kw">not</span> done:
+        action = policy.act(state)           <span class="cmt"># π(a|s)</span>
+        next_state, _, done, _ = env.step(action)
+        reward = reward_function(state, action, next_state)
+        policy.update(state, action, reward, next_state)
+        state = next_state</pre>
+                    </div>
+                </section>
+
+                <!-- 2. CORE PRINCIPLES -->
+                <section class="doc-section" id="core-principles">
+                    <div class="section-header">
+                        <span class="section-num">02</span>
+                        <h2>Core Principles</h2>
+                    </div>
+
+                    <h3>Principle 1 — Specify Goals, Not Paths</h3>
+                    <p>Reward the <strong>outcome</strong>, not the <strong>mechanism</strong>. If you reward "lift arm
+                        to 90°", the robot learns that exact pose — not "pick up objects." This over-specification
+                        prevents the agent from discovering better strategies.</p>
+
+                    <div class="hack-grid">
+                        <div class="hack-card bad">
+                            <div class="hack-label">❌ Behavior-Specified (Brittle)</div>
+                            <div class="hack-title">Reward: lift_angle > 90°</div>
+                            <p>Robot holds arm at 91° indefinitely. Never learns grasping. Brittle to object position
+                                changes.</p>
+                        </div>
+                        <div class="hack-card good">
+                            <div class="hack-label">✓ Goal-Specified (Robust)</div>
+                            <div class="hack-title">Reward: object_height > threshold</div>
+                            <p>Robot discovers multiple grasping strategies. Generalizes to new object positions.
+                                Emergent behavior.</p>
+                        </div>
+                    </div>
+
+                    <h3>Principle 2 — Reward Shaping</h3>
+                    <p>A well-shaped reward guides learning without over-constraining it. The shaping function F(s, s′)
+                        adds potential-based guidance while preserving the optimal policy:</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">Math</span>
+                            <span class="code-label">Potential-based shaping (Ng et al., 1999)</span>
+                        </div>
+                        <pre><span class="cmt"># Shaped reward preserves optimal policy</span>
+R_shaped(s, a, s′) = R(s, a, s′) + γ·Φ(s′) - Φ(s)
+
+<span class="cmt"># Example: use distance-to-goal as potential</span>
+Φ(s) = -distance_to_goal(s)
+
+<span class="cmt"># Result: agent gets small rewards for getting closer</span>
+<span class="cmt"># without changing which final policy is optimal</span></pre>
+                    </div>
+
+                    <h3>Principle 3 — Multi-Objective Balancing</h3>
+                    <p>Real robots must balance competing objectives simultaneously. The weighted sum approach:</p>
+
+                    <div class="formula-card">
+                        <div class="formula-main">
+                            R&nbsp;<span style="color:var(--muted)">=</span>&nbsp;
+                            <span class="coef">w₁</span>·<span class="var">R_task</span>&nbsp;
+                            <span class="plus">+</span>&nbsp;<span class="coef">w₂</span>·<span
+                                class="var">R_smooth</span>&nbsp;
+                            <span class="minus">−</span>&nbsp;<span class="coef">w₃</span>·<span
+                                class="var">R_energy</span>&nbsp;
+                            <span class="minus">−</span>&nbsp;<span class="coef">w₄</span>·<span
+                                class="var">R_danger</span>
+                        </div>
+                        <p style="font-size:12px;color:var(--muted);margin:0">Tuning the weights wᵢ is the primary
+                            engineering challenge — small changes produce drastically different emergent behaviors.</p>
+                    </div>
+                </section>
+
+                <!-- 3. SPARSE VS DENSE -->
+                <section class="doc-section" id="reward-types">
+                    <div class="section-header">
+                        <span class="section-num">03</span>
+                        <h2>Sparse vs Dense Rewards</h2>
+                    </div>
+
+                    <p>One of the first design decisions: how often does the robot receive feedback? This is the
+                        <strong>sparsity</strong> tradeoff.</p>
+
+                    <div class="compare-cols">
+                        <div class="compare-col sparse">
+                            <h4>Sparse Reward</h4>
+                            <ul>
+                                <li>Signal only at goal completion</li>
+                                <li>Clean, unambiguous objective</li>
+                                <li>Hard to explore from — credit assignment is difficult</li>
+                                <li>Requires HER, curriculum learning, or demonstrations</li>
+                                <li>Better generalization when it works</li>
+                            </ul>
+                        </div>
+                        <div class="compare-col dense">
+                            <h4>Dense Reward</h4>
+                            <ul>
+                                <li>Signal at every timestep</li>
+                                <li>Fast learning signal, easy to explore</li>
+                                <li>High risk of reward hacking</li>
+                                <li>May over-shape toward proxy behavior</li>
+                                <li>Default choice for most locomotion tasks</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="callout warning">
+                        <div class="callout-title">The Exploration Problem with Sparse Rewards</div>
+                        <p>If a robot must perform 20 correct steps to reach a goal and receive any reward, random
+                            exploration almost never reaches it. Techniques like <strong>Hindsight Experience Replay
+                                (HER)</strong>, <strong>curiosity-driven exploration</strong>, and <strong>reward
+                                curriculum</strong> help bridge this gap.</p>
+                    </div>
+                </section>
+
+                <!-- 4. REWARD HACKING -->
+                <section class="doc-section" id="reward-hacking">
+                    <div class="section-header">
+                        <span class="section-num">04</span>
+                        <h2>Reward Hacking</h2>
+                    </div>
+
+                    <p>Reward hacking occurs when the agent discovers unintended ways to maximize the reward proxy that
+                        violate the spirit of the task. It is inevitable if your reward function has any gap between the
+                        proxy and the true goal.</p>
+
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Intended Behavior</th>
+                                <th>Exploited Behavior</th>
+                                <th>Cause</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Locomotion</td>
+                                <td>Run forward fast</td>
+                                <td>Stand still (high alive bonus)</td>
+                                <td><span class="badge badge-orange">Weight imbalance</span></td>
+                            </tr>
+                            <tr>
+                                <td>Grasping</td>
+                                <td>Pick up object</td>
+                                <td>Push object off table (episode ends = no penalty)</td>
+                                <td><span class="badge badge-red">Missing penalty</span></td>
+                            </tr>
+                            <tr>
+                                <td>Sim locomotion</td>
+                                <td>Walk on terrain</td>
+                                <td>Exploit physics glitches to fly</td>
+                                <td><span class="badge badge-purple">Sim artifacts</span></td>
+                            </tr>
+                            <tr>
+                                <td>Manipulation</td>
+                                <td>Sort colored blocks</td>
+                                <td>Cover camera (appears sorted)</td>
+                                <td><span class="badge badge-red">Proxy measure</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="callout danger">
+                        <div class="callout-title">Goodhart's Law in RL</div>
+                        <p>"When a measure becomes a target, it ceases to be a good measure." — Once the agent optimizes
+                            your reward proxy hard enough, it diverges from your true intent. Always ask: <em>what is
+                                the worst possible way to maximize this reward?</em></p>
+                    </div>
+                </section>
+
+                <!-- 5. MULTI-OBJECTIVE -->
+                <section class="doc-section" id="multi-objective">
+                    <div class="section-header">
+                        <span class="section-num">05</span>
+                        <h2>Multi-Objective Reward Design</h2>
+                    </div>
+
+                    <p>Production robotics tasks require balancing multiple objectives simultaneously. Common components
+                        and their engineering rationale:</p>
+
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Type</th>
+                                <th>Typical Range</th>
+                                <th>Engineering Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="mono">R_task</span></td>
+                                <td><span class="badge badge-blue">Positive</span></td>
+                                <td>w ∈ [1, 5]</td>
+                                <td>Primary goal signal. Progress toward objective.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">R_control</span></td>
+                                <td><span class="badge badge-orange">Penalty</span></td>
+                                <td>w ∈ [0.001, 0.5]</td>
+                                <td>Penalize joint torques. Prevents motor wear on real hardware.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">R_alive</span></td>
+                                <td><span class="badge badge-green">Positive</span></td>
+                                <td>w ∈ [0.5, 2]</td>
+                                <td>Survival bonus. Keep robot upright and operational.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">R_contact</span></td>
+                                <td><span class="badge badge-red">Penalty</span></td>
+                                <td>w ∈ [0.01, 0.5]</td>
+                                <td>Penalize ground impact forces. Prevents hardware damage.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">R_smooth</span></td>
+                                <td><span class="badge badge-purple">Positive</span></td>
+                                <td>w ∈ [0.01, 0.3]</td>
+                                <td>Reward smooth trajectories. Critical for sim-to-real transfer.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- 6. HALF-CHEETAH -->
+                <section class="doc-section" id="halfcheetah">
+                    <div class="section-header">
+                        <span class="section-num">06</span>
+                        <h2>Case Study: OpenAI Half-Cheetah</h2>
+                    </div>
+
+                    <p>The <strong>MuJoCo Half-Cheetah</strong> is the most studied reward function in locomotion RL.
+                        Introduced by Wierstra et al. and popularized through OpenAI Gym, it has been the benchmark for
+                        hundreds of RL papers including PPO, SAC, TRPO, TD3, and more.</p>
+
+                    <p>The robot is a 2D planar cheetah with 6 actuated joints. The task: run forward as fast as
+                        possible while being energy-efficient and staying alive.</p>
+
+                    <div class="callout success">
+                        <div class="callout-title">Why It's Famous</div>
+                        <p>The Half-Cheetah reward is elegant because it produces a naturally-looking galloping gait
+                            using only three simple terms. The agent was never told <em>how</em> to run — it discovered
+                            that behavior from pure optimization pressure.</p>
+                    </div>
+                </section>
+
+                <!-- 7. FORMULA BREAKDOWN -->
+                <section class="doc-section" id="formula">
+                    <div class="section-header">
+                        <span class="section-num">07</span>
+                        <h2>Formula Breakdown</h2>
+                    </div>
+
+                    <p>The canonical Half-Cheetah reward from MuJoCo (used in most RL benchmarks):</p>
+
+                    <div class="formula-card">
+                        <div class="formula-main">
+                            R&nbsp;<span style="color:var(--muted)">=</span>&nbsp;
+                            <span class="plus">+</span><span class="var">v_x</span>&nbsp;
+                            <span class="minus">−</span>&nbsp;<span class="coef">0.1</span>&nbsp;·&nbsp;‖<span
+                                class="var">a</span>‖²&nbsp;
+                            <span class="plus">+</span>&nbsp;<span class="coef">1.0</span>
+                        </div>
+                        <div class="formula-breakdown">
+                            <div class="fb-item vel">
+                                <div class="fb-term">+ v_x</div>
+                                <div class="fb-desc">Forward velocity reward. Proportional to x-axis speed.</div>
+                            </div>
+                            <div class="fb-item ctrl">
+                                <div class="fb-term">− 0.1·‖a‖²</div>
+                                <div class="fb-desc">Control cost. L2 norm of joint torques penalized.</div>
+                            </div>
+                            <div class="fb-item alive">
+                                <div class="fb-term">+ 1.0</div>
+                                <div class="fb-desc">Alive bonus. Constant per timestep for staying upright.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">Python</span>
+                            <span class="code-label">HalfCheetah-v4 reward — from OpenAI Gymnasium source</span>
+                        </div>
+                        <pre><span class="kw">def</span> <span class="fn">step</span>(self, action):
+    x_position_before = self.data.qpos[<span class="num">0</span>]
+    self.do_simulation(action, self.frame_skip)
+    x_position_after  = self.data.qpos[<span class="num">0</span>]
+
+    <span class="cmt"># dt = timestep × frames per step</span>
+    x_velocity = (x_position_after - x_position_before) / self.dt
+
+    <span class="cmt"># ── Reward components ──────────────────────────</span>
+    forward_reward = self._forward_reward_weight * x_velocity
+    ctrl_cost      = self.control_cost(action)       <span class="cmt"># 0.1 * sum(a²)</span>
+
+    <span class="cmt"># Total reward</span>
+    reward = forward_reward - ctrl_cost
+
+    <span class="cmt"># Note: alive_bonus removed in v4 (implicit in no termination)</span>
+    <span class="kw">return</span> observation, reward, terminated, truncated, info
+
+<span class="kw">def</span> <span class="fn">control_cost</span>(self, action):
+    <span class="kw">return</span> self._ctrl_cost_weight * np.sum(np.square(action))</pre>
+                    </div>
+
+                    <h3>Effect of Weight Changes</h3>
+
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Configuration</th>
+                                <th>Alive Bonus</th>
+                                <th>Velocity Weight</th>
+                                <th>Control Cost</th>
+                                <th>Emergent Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge badge-green">Default</span></td>
+                                <td>1.0</td>
+                                <td>1.0</td>
+                                <td>0.1</td>
+                                <td>Natural gallop, energy-efficient</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-red">Broken</span></td>
+                                <td>5.0</td>
+                                <td>0.0</td>
+                                <td>0.0</td>
+                                <td>Stands perfectly still (reward hacked)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-orange">Speed demon</span></td>
+                                <td>0.5</td>
+                                <td>5.0</td>
+                                <td>0.0</td>
+                                <td>Chaotic thrashing, fast but violent</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-blue">Efficient</span></td>
+                                <td>1.0</td>
+                                <td>1.0</td>
+                                <td>1.0</td>
+                                <td>Barely moves — energy cost dominates</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-purple">Cautious</span></td>
+                                <td>3.0</td>
+                                <td>0.5</td>
+                                <td>0.5</td>
+                                <td>Slow careful steps, avoids risk</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- 8. INTERACTIVE PRESETS -->
+                <section class="doc-section" id="presets">
+                    <div class="section-header">
+                        <span class="section-num">08</span>
+                        <h2>Interactive: Tune the Reward</h2>
+                    </div>
+
+                    <p>Adjust the weight coefficients and observe how they affect simulated return estimates. This
+                        demonstrates the sensitivity of emergent behavior to reward design choices.</p>
+
+                    <div
+                        style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:28px 28px 24px;margin:20px 0">
+
+                        <div style="margin-bottom:20px">
+                            <div
+                                style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">
+                                Load preset</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                <button onclick="loadP('default',this)" class="pbtn active"
+                                    style="font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:99px;border:1px solid var(--border2);cursor:pointer;background:rgba(91,127,255,0.15);color:var(--accent)">Default</button>
+                                <button onclick="loadP('speed',this)" class="pbtn"
+                                    style="font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:99px;border:1px solid var(--border2);cursor:pointer;background:transparent;color:var(--muted)">Max
+                                    Speed</button>
+                                <button onclick="loadP('efficient',this)" class="pbtn"
+                                    style="font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:99px;border:1px solid var(--border2);cursor:pointer;background:transparent;color:var(--muted)">Efficient</button>
+                                <button onclick="loadP('broken',this)" class="pbtn"
+                                    style="font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:99px;border:1px solid var(--border2);cursor:pointer;background:transparent;color:var(--muted)">Broken
+                                    ⚠</button>
+                            </div>
+                        </div>
+
+                        <div style="border-top:1px solid var(--border);padding-top:18px;margin-bottom:18px">
+                            <div class="weight-row">
+                                <span class="w-term" style="color:var(--accent)">w₁ · v_x</span>
+                                <input type="range" id="rw1" min="0" max="5" step="0.1" value="1" oninput="updateSim()">
+                                <span id="rv1"
+                                    style="font-family:var(--mono);font-size:12px;min-width:36px;text-align:right;color:var(--text)">1.0</span>
+                                <span class="w-desc">Forward velocity</span>
+                            </div>
+                            <div class="weight-row">
+                                <span class="w-term" style="color:var(--accent3)">w₂ · ‖a‖²</span>
+                                <input type="range" id="rw2" min="0" max="1" step="0.01" value="0.1"
+                                    oninput="updateSim()">
+                                <span id="rv2"
+                                    style="font-family:var(--mono);font-size:12px;min-width:36px;text-align:right;color:var(--text)">0.10</span>
+                                <span class="w-desc">Control cost</span>
+                            </div>
+                            <div class="weight-row">
+                                <span class="w-term" style="color:var(--accent2)">w₃ · alive</span>
+                                <input type="range" id="rw3" min="0" max="5" step="0.1" value="1" oninput="updateSim()">
+                                <span id="rv3"
+                                    style="font-family:var(--mono);font-size:12px;min-width:36px;text-align:right;color:var(--text)">1.0</span>
+                                <span class="w-desc">Alive bonus</span>
+                            </div>
+                        </div>
+
+                        <div style="font-family:var(--mono);font-size:13px;background:var(--surface3);border-radius:7px;padding:12px 16px;margin-bottom:18px;color:#c8cfe8"
+                            id="formula-live">
+                            R = 1.0·v_x − 0.10·‖a‖² + 1.0
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px"
+                            id="sim-metrics"></div>
+
+                        <div style="background:var(--surface3);border-radius:8px;padding:13px 16px;font-size:13px;color:var(--muted);line-height:1.6;border-left:3px solid var(--border2)"
+                            id="sim-behavior"></div>
+
+                        <div style="margin-top:20px">
+                            <div
+                                style="font-size:12px;color:var(--muted);margin-bottom:8px;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;font-size:10px">
+                                Episode reward curve</div>
+                            <canvas id="simChart" height="150"
+                                style="border-radius:6px;background:var(--surface3);padding:10px;width:100%"></canvas>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- 9. DESIGN PROCESS -->
+                <section class="doc-section" id="process">
+                    <div class="section-header">
+                        <span class="section-num">09</span>
+                        <h2>Reward Design Process</h2>
+                    </div>
+
+                    <p>A structured workflow for designing reliable reward functions in real robotics projects:</p>
+
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div class="step-body">
+                                <h4>Define success unambiguously</h4>
+                                <p>Write a precise, measurable definition of task success. Avoid vague goals. "Robot
+                                    picks up object and places it in bin" — not "robot does the task well."</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div class="step-body">
+                                <h4>Choose signal density</h4>
+                                <p>Decide sparse vs dense. For manipulation with clear terminal states: try sparse
+                                    first. For locomotion and continuous control: start dense. Use shaping if sparse is
+                                    too hard to explore.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div class="step-body">
+                                <h4>Add necessary penalty terms</h4>
+                                <p>Ask: what are the top 3 ways to maximize this reward without actually doing the task?
+                                    Add penalty terms to block each exploit. Repeat after each training run.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">4</div>
+                            <div class="step-body">
+                                <h4>Set initial weights via domain knowledge</h4>
+                                <p>Use physics intuition. If forward velocity is ~2 m/s and control cost terms are ~0.3,
+                                    a weight of 0.1 keeps them comparable. Normalize or scale terms before tuning.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">5</div>
+                            <div class="step-body">
+                                <h4>Train and audit for exploits</h4>
+                                <p>Watch rollout videos, not just reward curves. Agents are creative. Log each component
+                                    separately to understand which term is driving behavior.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">6</div>
+                            <div class="step-body">
+                                <h4>Iterate and document</h4>
+                                <p>Track every reward function change with its motivation and result. Reward engineering
+                                    is empirical science. Version control your reward function like code.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 10. COMMON PITFALLS -->
+                <section class="doc-section" id="pitfalls">
+                    <div class="section-header">
+                        <span class="section-num">10</span>
+                        <h2>Common Pitfalls</h2>
+                    </div>
+
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Pitfall</th>
+                                <th>Symptom</th>
+                                <th>Fix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong style="color:var(--text)">Unscaled terms</strong></td>
+                                <td>One reward component dominates entirely</td>
+                                <td>Normalize all terms to similar magnitude before adding weights</td>
+                            </tr>
+                            <tr>
+                                <td><strong style="color:var(--text)">Missing terminal condition</strong></td>
+                                <td>Agent learns to end episodes early to avoid penalties</td>
+                                <td>Add episode-end penalty or remove terminal conditions that can be exploited</td>
+                            </tr>
+                            <tr>
+                                <td><strong style="color:var(--text)">Conflicting objectives</strong></td>
+                                <td>Agent oscillates between behaviors, unstable training</td>
+                                <td>Diagnose via per-component reward logging; adjust weights or decouple objectives
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong style="color:var(--text)">Alive bonus too high</strong></td>
+                                <td>Agent learns to stand still</td>
+                                <td>Reduce alive bonus or replace with task-progress bonus</td>
+                            </tr>
+                            <tr>
+                                <td><strong style="color:var(--text)">Proxy measure</strong></td>
+                                <td>Agent achieves metric without task (Goodhart's Law)</td>
+                                <td>Use learned reward models, RLHF, or multi-angle success criteria</td>
+                            </tr>
+                            <tr>
+                                <td><strong style="color:var(--text)">Sim-only rewards</strong></td>
+                                <td>Great sim performance, poor real transfer</td>
+                                <td>Add smoothness penalties; penalize high-frequency control; reduce sim speed bonuses
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="callout info">
+                        <div class="callout-title">Advanced: Learned Reward Models</div>
+                        <p>When hand-engineering reward functions becomes intractable, consider <strong>Inverse
+                                Reinforcement Learning (IRL)</strong> to infer rewards from demonstrations, or
+                            <strong>RLHF (Reinforcement Learning from Human Feedback)</strong> to learn a reward model
+                            from human preference comparisons — the same technique used in modern LLMs like GPT-4.</p>
+                    </div>
+                </section>
+
+            </div><!-- /content -->
+
+            <!-- FOOTER -->
+            <footer class="doc-footer">
+                <span>Robotics RL — Reward Function Design Documentation</span>
+                <span>Based on OpenAI Gym / MuJoCo Half-Cheetah Benchmark</span>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        const presets = {
+            default: { w1: 1, w2: 0.10, w3: 1 },
+            speed: { w1: 5, w2: 0, w3: 0.5 },
+            efficient: { w1: 1, w2: 1, w3: 1 },
+            broken: { w1: 0, w2: 0, w3: 5 },
+        };
+
+        function loadP(key, btn) {
+            document.querySelectorAll('.pbtn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = 'var(--muted)';
+            });
+            btn.style.background = 'rgba(91,127,255,0.15)';
+            btn.style.color = 'var(--accent)';
+            const p = presets[key];
+            document.getElementById('rw1').value = p.w1;
+            document.getElementById('rw2').value = p.w2;
+            document.getElementById('rw3').value = p.w3;
+            updateSim();
+        }
+
+        function updateSim() {
+            const w1 = parseFloat(document.getElementById('rw1').value);
+            const w2 = parseFloat(document.getElementById('rw2').value);
+            const w3 = parseFloat(document.getElementById('rw3').value);
+
+            document.getElementById('rv1').textContent = w1.toFixed(1);
+            document.getElementById('rv2').textContent = w2.toFixed(2);
+            document.getElementById('rv3').textContent = w3.toFixed(1);
+
+            document.getElementById('formula-live').textContent =
+                `R = ${w1.toFixed(1)}·v_x − ${w2.toFixed(2)}·‖a‖² + ${w3.toFixed(1)}`;
+
+            const speed = Math.max(0, Math.min(10, w1 * 2.1 - w2 * 3 + 0.5));
+            const efficiency = Math.max(0, Math.min(10, 10 - w1 * 0.7 + w2 * 7));
+            const stability = Math.max(0, Math.min(10, w3 * 1.8 - w1 * 0.3 + w2 * 0.5));
+            const estReturn = Math.max(0, (speed * 0.5 + efficiency * 0.2 + stability * 0.3)).toFixed(1);
+
+            const mc = (val, lbl, clr) =>
+                `<div style="background:var(--surface3);border-radius:8px;padding:12px 14px">
+        <div style="font-size:20px;font-weight:500;font-family:var(--display);color:${clr}">${val.toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--mono)">${lbl}</div>
+      </div>`;
+
+            document.getElementById('sim-metrics').innerHTML =
+                mc(speed, 'Speed', 'var(--accent)') +
+                mc(efficiency, 'Efficiency', 'var(--accent3)') +
+                mc(stability, 'Stability', 'var(--accent2)') +
+                mc(parseFloat(estReturn), 'Est. Return', 'var(--purple)');
+
+            let beh = '';
+            if (w3 > 3 && w1 < 0.4)
+                beh = '<strong style="color:var(--accent4)">⚠ Reward hack detected.</strong> The alive bonus dominates — the agent learns to stand perfectly still. Zero locomotion. Classic "do nothing" exploit.';
+            else if (w1 > 3 && w2 < 0.02)
+                beh = '<strong style="color:var(--accent3)">Chaotic sprinter.</strong> High velocity weight + no control cost → violent thrashing. Agent moves fast but with uncoordinated, high-torque joint motion. Physically implausible.';
+            else if (w2 > 0.7)
+                beh = '<strong style="color:var(--accent)">Energy miser.</strong> Control cost dominates. Agent barely moves — near-zero actions are optimal. Useful if motor wear is a real constraint on physical hardware.';
+            else if (w1 >= 1 && w2 > 0 && w3 >= 0.5)
+                beh = '<strong style="color:var(--accent2)">Balanced locomotion.</strong> This is the canonical Half-Cheetah result. A natural bounding gait emerges from the tradeoff between speed, energy, and survival. Benchmark default.';
+            else
+                beh = 'Intermediate policy. Adjust weights further to push toward a distinct behavior.';
+
+            document.getElementById('sim-behavior').innerHTML = beh;
+            drawChart(w1, w2, w3);
+        }
+
+        function drawChart(w1, w2, w3) {
+            const canvas = document.getElementById('simChart');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.offsetWidth; const H = 150;
+            canvas.width = W; canvas.height = H;
+            const T = 50;
+            const pad = { t: 14, r: 16, b: 22, l: 42 };
+            const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+
+            const velR = [], ctrlR = [], aliveR = [], total = [];
+            for (let t = 0; t < T; t++) {
+                const ramp = Math.min(1, t / 10);
+                const vx = ramp * (1.5 + w1 * 0.5 + Math.sin(t * 0.5) * 0.2 * w1);
+                const ct = w2 * (0.8 + Math.abs(Math.sin(t * 0.6)) * w1 * 0.6);
+                const al = w3;
+                velR.push(w1 * vx); ctrlR.push(ct); aliveR.push(al);
+                total.push(w1 * vx - ct + al);
+            }
+
+            const allV = [...velR, ...total, 0];
+            const minV = Math.min(...allV), maxV = Math.max(...allV);
+            const rng = Math.max(1, maxV - minV);
+
+            const tx = i => pad.l + (i / (T - 1)) * cw;
+            const ty = v => pad.t + ch - ((v - minV) / rng) * ch;
+
+            ctx.clearRect(0, 0, W, H);
+
+            if (minV < 0) {
+                const zy = ty(0);
+                ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath(); ctx.moveTo(pad.l, zy); ctx.lineTo(pad.l + cw, zy); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            function line(arr, color, w, dash) {
+                ctx.strokeStyle = color; ctx.lineWidth = w;
+                ctx.setLineDash(dash || []);
+                ctx.beginPath();
+                arr.forEach((v, i) => i === 0 ? ctx.moveTo(tx(i), ty(v)) : ctx.lineTo(tx(i), ty(v)));
+                ctx.stroke(); ctx.setLineDash([]);
+            }
+
+            line(velR, '#5b7fff', 1.2);
+            line(ctrlR, '#ff9f43', 1.2, [4, 3]);
+            line(aliveR, '#38d9a9', 1.2);
+            line(total, '#a78bfa', 2);
+
+            ctx.fillStyle = 'rgba(120,125,150,0.6)';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(maxV.toFixed(1), pad.l - 4, pad.t + 8);
+            ctx.fillText(minV.toFixed(1), pad.l - 4, pad.t + ch);
+            ctx.textAlign = 'center';
+            ctx.fillText('Timestep →', pad.l + cw / 2, H - 2);
+        }
+
+        // Active nav on scroll
+        const sections = document.querySelectorAll('.doc-section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    const active = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+                    if (active) active.classList.add('active');
+                }
+            });
+        }, { threshold: 0.4 });
+        sections.forEach(s => observer.observe(s));
+
+        updateSim();
+    </script>
+</body>
+
+</html>
