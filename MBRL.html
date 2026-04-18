@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model-Based Reinforcement Learning & World Models</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #08090d;
+            --surface: #0f1117;
+            --surface2: #161a24;
+            --border: #1e2435;
+            --border-bright: #2a3249;
+            --text: #e2e8f4;
+            --text-muted: #7a869e;
+            --text-dim: #4a5568;
+            --accent: #5b8fff;
+            --accent2: #a78bfa;
+            --accent3: #34d399;
+            --accent4: #f59e0b;
+            --accent-red: #f87171;
+            --glow: rgba(91, 143, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(8, 9, 13, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            height: 52px;
+            overflow-x: auto;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            padding: 0 16px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid var(--border);
+            white-space: nowrap;
+            transition: color .2s, background .2s;
+        }
+
+        nav a:first-child {
+            border-left: 1px solid var(--border);
+        }
+
+        nav a:hover {
+            color: var(--accent);
+            background: var(--glow);
+        }
+
+        .nav-logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-right: 16px;
+            white-space: nowrap;
+            letter-spacing: .05em;
+        }
+
+        /* ─── LAYOUT ─── */
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 88px 2rem 80px;
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            padding: 72px 0 56px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 64px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -60px;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(91, 143, 255, .08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid rgba(91, 143, 255, .3);
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1.15;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .hero-sub {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 640px;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .hero-badge {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent3);
+            display: inline-block;
+        }
+
+        /* ─── SECTION HEADERS ─── */
+        .section {
+            margin-bottom: 72px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: .1em;
+        }
+
+        h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            margin-top: 28px;
+        }
+
+        p {
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ─── CONCEPT BOX ─── */
+        .concept {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+
+        .concept-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: .95rem;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .concept p {
+            margin-bottom: 0;
+        }
+
+        /* ─── MATH ─── */
+        .math-block {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--accent2);
+            margin: 16px 0;
+            overflow-x: auto;
+            line-height: 1.8;
+        }
+
+        .math-comment {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* ─── ALGO CARD ─── */
+        .algo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .algo-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            transition: border-color .2s, transform .2s;
+            cursor: default;
+        }
+
+        .algo-card:hover {
+            border-color: var(--border-bright);
+            transform: translateY(-2px);
+        }
+
+        .algo-name {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .algo-year {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--accent);
+            letter-spacing: .08em;
+            margin-bottom: 10px;
+        }
+
+        .algo-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .algo-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 2px;
+            letter-spacing: .04em;
+        }
+
+        .tag-blue {
+            background: rgba(91, 143, 255, .12);
+            color: var(--accent);
+            border: 1px solid rgba(91, 143, 255, .2);
+        }
+
+        .tag-purple {
+            background: rgba(167, 139, 250, .12);
+            color: var(--accent2);
+            border: 1px solid rgba(167, 139, 250, .2);
+        }
+
+        .tag-green {
+            background: rgba(52, 211, 153, .12);
+            color: var(--accent3);
+            border: 1px solid rgba(52, 211, 153, .2);
+        }
+
+        .tag-amber {
+            background: rgba(245, 158, 11, .12);
+            color: var(--accent4);
+            border: 1px solid rgba(245, 158, 11, .2);
+        }
+
+        .tag-red {
+            background: rgba(248, 113, 113, .12);
+            color: var(--accent-red);
+            border: 1px solid rgba(248, 113, 113, .2);
+        }
+
+        /* ─── PROS / CONS ─── */
+        .pc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 560px) {
+            .pc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .pc-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .pc-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: .85rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .pc-pro .pc-title {
+            color: var(--accent3);
+        }
+
+        .pc-con .pc-title {
+            color: var(--accent-red);
+        }
+
+        .pc-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .pc-icon {
+            flex-shrink: 0;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        /* ─── PIPELINE ─── */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 20px 0;
+        }
+
+        .pipe-step {
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        .pipe-arrow {
+            color: var(--text-dim);
+            font-size: 16px;
+        }
+
+        /* ─── RSSM DIAGRAM ─── */
+        .rssm-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 28px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rssm-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: repeating-linear-gradient(45deg, transparent, transparent 40px,
+                    rgba(91, 143, 255, .015) 40px, rgba(91, 143, 255, .015) 80px);
+            pointer-events: none;
+        }
+
+        .rssm-row {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .rssm-node {
+            flex: 1;
+            min-width: 120px;
+            border: 1px solid var(--border-bright);
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+        }
+
+        .rssm-node.stoch {
+            border-color: rgba(91, 143, 255, .4);
+            color: var(--accent);
+        }
+
+        .rssm-node.determ {
+            border-color: rgba(167, 139, 250, .4);
+            color: var(--accent2);
+        }
+
+        .rssm-node.obs {
+            border-color: rgba(52, 211, 153, .4);
+            color: var(--accent3);
+        }
+
+        .rssm-node.reward {
+            border-color: rgba(245, 158, 11, .4);
+            color: var(--accent4);
+        }
+
+        .rssm-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .rssm-main {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .rssm-eq {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* ─── PSEUDOCODE ─── */
+        .pseudo {
+            background: #0a0c12;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: #c9d3e8;
+            margin: 16px 0;
+            overflow-x: auto;
+            line-height: 1.8;
+        }
+
+        .pseudo .kw {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .pseudo .fn {
+            color: var(--accent2);
+        }
+
+        .pseudo .cmt {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .pseudo .num {
+            color: var(--accent3);
+        }
+
+        .pseudo .str {
+            color: var(--accent4);
+        }
+
+        /* ─── COMPARISON TABLE ─── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        td {
+            padding: 10px 14px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, .015);
+        }
+
+        td:first-child {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        .t-good {
+            color: var(--accent3);
+        }
+
+        .t-bad {
+            color: var(--accent-red);
+        }
+
+        .t-mid {
+            color: var(--accent4);
+        }
+
+        /* ─── HIGHLIGHT BOX ─── */
+        .highlight {
+            background: linear-gradient(135deg, rgba(91, 143, 255, .08), rgba(167, 139, 250, .05));
+            border: 1px solid rgba(91, 143, 255, .2);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+
+        .highlight-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: .9rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .highlight p {
+            margin-bottom: 0;
+        }
+
+        /* ─── PAPER CARD ─── */
+        .paper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .paper-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        .paper-title {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .paper-meta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .paper-note {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ─── FOLLOW-UP QUESTION ─── */
+        .followup {
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            border-left: 3px solid var(--accent4);
+            border-radius: 4px;
+            padding: 18px 22px;
+            margin-top: 20px;
+        }
+
+        .followup-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--accent4);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .followup p {
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 0;
+            font-style: italic;
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            border-top: 1px solid var(--border);
+            margin-top: 80px;
+            padding: 32px 0;
+            text-align: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* ─── SCROLL ANIMATIONS ─── */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity .5s ease, transform .5s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <span class="nav-logo">MBRL</span>
+        <a href="#foundation">Foundation</a>
+        <a href="#world-model">World Models</a>
+        <a href="#algorithms">Algorithms</a>
+        <a href="#pros-cons">Pros & Cons</a>
+        <a href="#aerial">Aerial RL</a>
+        <a href="#papers">Papers</a>
+    </nav>
+
+    <div class="page">
+
+        <!-- HERO -->
+        <div class="hero fade-in">
+            <div class="hero-tag">Deep Reinforcement Learning · Research Reference</div>
+            <h1>Model-Based <span>Reinforcement Learning</span><br>& World Models</h1>
+            <p class="hero-sub">
+                A rigorous exploration of MBRL: from the mathematical foundation of dynamics models
+                through state-of-the-art world model architectures (DreamerV3, MBPO, TD-MPC2),
+                their trade-offs, and applications in aerial robotics.
+            </p>
+            <div class="hero-meta">
+                <span class="hero-badge">Sample Efficiency</span>
+                <span class="hero-badge">Latent Imagination</span>
+                <span class="hero-badge">Sim-to-Real Transfer</span>
+                <span class="hero-badge">Quadrotor Control</span>
+            </div>
+        </div>
+
+        <!-- SECTION 1: FOUNDATION -->
+        <div class="section fade-in" id="foundation">
+            <div class="section-header">
+                <span class="section-num">01</span>
+                <h2>The Core Idea: What Is a Model?</h2>
+            </div>
+
+            <p>
+                In standard (model-free) RL, an agent learns a policy <strong>π(a|s)</strong> purely by
+                trial-and-error interaction with the environment — it never explicitly reasons about <em>what will
+                    happen next</em>.
+                Model-based RL (MBRL) changes this: the agent also maintains a learned <strong>dynamics model</strong>
+                that approximates how the environment transitions.
+            </p>
+
+            <div class="concept">
+                <div class="concept-title">Formal Definition: Environment Model</div>
+                <p>
+                    A model <strong>M</strong> is a learned approximation of the true environment dynamics. It typically
+                    consists of
+                    a <em>transition model</em> and a <em>reward model</em>:
+                </p>
+            </div>
+
+            <div class="math-block">
+                <span class="math-comment">// Transition model</span>
+                p̂_θ(s_{t+1} | s_t, a_t) ≈ p(s_{t+1} | s_t, a_t) <span class="math-comment">// true env dynamics</span>
+
+                <span class="math-comment">// Reward model</span>
+                r̂_θ(s_t, a_t) ≈ r(s_t, a_t)
+
+                <span class="math-comment">// With model, we can generate synthetic rollouts:</span>
+                ŝ_{t+1} ~ p̂_θ(· | s_t, a_t)
+                r̂_t = r̂_θ(s_t, a_t)
+            </div>
+
+            <p>
+                Once a model is learned, the agent can <strong>plan inside it</strong> — generating hundreds of imagined
+                trajectories at almost zero cost (no real-world interaction), extracting policy gradients from them,
+                or using them to supplement the real-data replay buffer.
+                This is the mechanism that makes MBRL <strong>dramatically more sample efficient</strong> than
+                model-free counterparts.
+            </p>
+
+            <h3>Two Roles a Model Can Play</h3>
+            <div class="algo-grid">
+                <div class="algo-card">
+                    <div class="algo-name">Model for Planning</div>
+                    <div class="algo-desc">
+                        The model is used at decision time to simulate future trajectories and select
+                        the best action via MPC (Model Predictive Control) or tree search. Examples: PETS, MPPI.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">MPC</span>
+                        <span class="tag tag-purple">Planning</span>
+                        <span class="tag tag-amber">No Policy Network</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Model for Learning</div>
+                    <div class="algo-desc">
+                        The model generates synthetic data (imagined rollouts) that are used to train a separate
+                        policy/value function. Examples: Dreamer, MBPO, TD-MPC2.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">Dyna-style</span>
+                        <span class="tag tag-green">Latent Space</span>
+                        <span class="tag tag-purple">Imagination</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="followup">
+                <div class="followup-label">🧠 Nurturing Question</div>
+                <p>In model-free RL, the agent must observe a real transition to learn from it. But in Dyna-style MBRL,
+                    synthetic transitions are generated from the model and mixed with real data. Can you think of a
+                    potential problem if the learned model is slightly wrong — how might this affect policy training,
+                    especially over long imagined horizons?</p>
+            </div>
+        </div>
+
+        <!-- SECTION 2: WORLD MODELS -->
+        <div class="section fade-in" id="world-model">
+            <div class="section-header">
+                <span class="section-num">02</span>
+                <h2>World Models: Learning to Dream</h2>
+            </div>
+
+            <p>
+                A <strong>World Model</strong> is a specific class of dynamics model that learns a
+                <em>compact latent representation</em> of the environment state and predicts future states,
+                rewards, and terminals entirely within this compressed latent space —
+                enabling the agent to "imagine" and train <em>without ever stepping into the real environment</em>.
+            </p>
+
+            <div class="concept">
+                <div class="concept-title">World Model vs. Simple Dynamics Model</div>
+                <p>
+                    A naive dynamics model predicts next states in raw observation space (pixels → pixels),
+                    which is computationally prohibitive. A world model instead encodes observations into a
+                    <strong>compact stochastic latent variable z_t</strong>, then predicts future latent states
+                    — predictions are cheap and can run at scale.
+                </p>
+            </div>
+
+            <h3>The Recurrent State-Space Model (RSSM) — Heart of DreamerV3</h3>
+            <p>
+                DreamerV3's world model is a <strong>Recurrent State-Space Model</strong>. It maintains a
+                <em>hybrid state</em> combining a stochastic component z_t (for expressiveness) and a
+                deterministic component h_t (for temporal memory). This enables it to model
+                environments with partial observability and long temporal dependencies.
+            </p>
+
+            <div class="rssm-box">
+                <div class="rssm-row">
+                    <div class="rssm-node determ">
+                        <div class="rssm-label">Deterministic</div>
+                        <div class="rssm-main">h_t</div>
+                        <div class="rssm-eq">GRU(h_{t-1}, z_{t-1}, a_{t-1})</div>
+                    </div>
+                    <div class="rssm-node stoch">
+                        <div class="rssm-label">Stochastic</div>
+                        <div class="rssm-main">z_t</div>
+                        <div class="rssm-eq">~ Categorical(q_φ(h_t, o_t))</div>
+                    </div>
+                    <div class="rssm-node obs">
+                        <div class="rssm-label">Observation</div>
+                        <div class="rssm-main">ô_t</div>
+                        <div class="rssm-eq">decoder_φ(h_t, z_t)</div>
+                    </div>
+                    <div class="rssm-node reward">
+                        <div class="rssm-label">Reward</div>
+                        <div class="rssm-main">r̂_t</div>
+                        <div class="rssm-eq">reward_φ(h_t, z_t)</div>
+                    </div>
+                </div>
+                <p
+                    style="font-size: 12px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 8px;">
+                    RSSM: left = prior (no observation), right = posterior (with observation). During imagination, only
+                    prior is used — no real env needed.
+                </p>
+            </div>
+
+            <div class="math-block">
+                <span class="math-comment">// RSSM equations</span>
+                h_t = GRU(h_{t-1}, z_{t-1}, a_{t-1}) <span class="math-comment">// deterministic recurrence</span>
+                z_t ~ q_φ(z_t | h_t, o_t) <span class="math-comment">// posterior: uses real obs o_t</span>
+                z_t ~ p_φ(z_t | h_t) <span class="math-comment">// prior: used during imagination</span>
+
+                <span class="math-comment">// World model objective (ELBO)</span>
+                L_WM = E[ Σ_t β_pred · L_pred(o_t, r_t, c_t) <span class="math-comment">// prediction loss</span>
+                + β_dyn · KL[q_φ||p_φ] <span class="math-comment">// dynamics KL</span>
+                + β_rep · KL[q_φ||sg(p_φ)] ] <span class="math-comment">// representation KL</span>
+            </div>
+
+            <h3>Imagination-Based Policy Optimization</h3>
+            <p>
+                Once the RSSM is trained, the actor and critic are trained <em>entirely within imagination</em>:
+                imagined trajectories of length H are rolled out from the prior, and gradients flow back
+                through the world model dynamics. No real environment interaction is needed for policy learning.
+            </p>
+
+            <div class="pipeline">
+                <div class="pipe-step">Real Env → Replay Buffer</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step">Fit RSSM on buffer</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step">Imagine H-step rollouts</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step">Actor-Critic update (imagined returns)</div>
+                <span class="pipe-arrow">→</span>
+                <div class="pipe-step">Execute policy → collect real data</div>
+            </div>
+
+            <div class="pseudo">
+                <span class="kw">Algorithm:</span> DreamerV3 Training Loop
+                <span class="cmt">─────────────────────────────────────────────────────</span>
+                <span class="kw">Initialize</span>: world model θ, actor φ_π, critic φ_V
+                <span class="kw">Initialize</span>: replay buffer D with random episodes
+
+                <span class="kw">while</span> not converged:
+                <span class="cmt">// Phase 1: Collect real experience</span>
+                <span class="kw">for</span> <span class="num">N</span> real steps:
+                a_t ~ π_φ(a | h_t, z_t) <span class="cmt">// execute policy</span>
+                o_{t+1}, r_t ~ env.step(a_t) <span class="cmt">// real transition</span>
+                D.add(o_t, a_t, r_t)
+
+                <span class="cmt">// Phase 2: Fit World Model</span>
+                <span class="kw">for</span> <span class="num">C</span> gradient steps:
+                batch = D.sample_sequences(B, T) <span class="cmt">// B seqs, T steps each</span>
+                h, z = RSSM.encode(batch)
+                L_WM = pred_loss + β_dyn·KL + β_rep·KL
+                update(θ, ∇L_WM)
+
+                <span class="cmt">// Phase 3: Imagine & Train Actor-Critic</span>
+                <span class="kw">for</span> <span class="num">C</span> gradient steps:
+                z_0 = D.sample_states() <span class="cmt">// seed from real data</span>
+                τ_img = RSSM.imagine(z_0, π, H=15) <span class="cmt">// H-step rollout in latent</span>
+                V_λ = compute_λ_returns(τ_img)
+                L_π = -E[V_λ] <span class="cmt">// maximize imagined returns</span>
+                L_V = E[(V_φ - sg(V_λ))²]
+                update(φ_π, φ_V, ∇L_π, ∇L_V)
+            </div>
+
+            <div class="followup">
+                <div class="followup-label">🧠 Nurturing Question</div>
+                <p>The RSSM has both a <em>stochastic</em> component z_t and a <em>deterministic</em> component h_t.
+                    Why is each necessary? What failure mode would occur if the model were purely deterministic,
+                    or purely stochastic?</p>
+            </div>
+        </div>
+
+        <!-- SECTION 3: ALGORITHMS -->
+        <div class="section fade-in" id="algorithms">
+            <div class="section-header">
+                <span class="section-num">03</span>
+                <h2>Major MBRL Algorithms</h2>
+            </div>
+
+            <div class="algo-grid">
+                <div class="algo-card">
+                    <div class="algo-name">PETS</div>
+                    <div class="algo-year">Chua et al., 2018 · NeurIPS</div>
+                    <div class="algo-desc">
+                        Probabilistic Ensembles with Trajectory Sampling. Trains an <strong>ensemble of neural network
+                            dynamics models</strong>
+                        (each a Gaussian outputting mean + variance). Uses CEM (Cross-Entropy Method) for planning.
+                        Pure model-for-planning — no separate policy network.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">Ensemble</span>
+                        <span class="tag tag-purple">CEM Planning</span>
+                        <span class="tag tag-amber">Uncertainty</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">MBPO</div>
+                    <div class="algo-year">Janner et al., 2019 · NeurIPS</div>
+                    <div class="algo-desc">
+                        Model-Based Policy Optimization. Combines short model rollouts (H=1–5) from an ensemble with
+                        a SAC policy trained on a mixed real+synthetic buffer.
+                        Key insight: <strong>short rollouts avoid compounding error</strong>.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">Dyna-style</span>
+                        <span class="tag tag-green">SAC policy</span>
+                        <span class="tag tag-purple">Mixed buffer</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">DreamerV3</div>
+                    <div class="algo-year">Hafner et al., 2023 · Nature 2025</div>
+                    <div class="algo-desc">
+                        World model with RSSM + imagination-based actor-critic. Works across diverse tasks
+                        (pixels, vectors, continuous/discrete) with <strong>fixed hyperparameters</strong>.
+                        First to master Minecraft diamond collection from scratch.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">World Model</span>
+                        <span class="tag tag-purple">RSSM</span>
+                        <span class="tag tag-green">Universal</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">TD-MPC2</div>
+                    <div class="algo-year">Hansen et al., 2024 · ICLR</div>
+                    <div class="algo-desc">
+                        Temporal Difference Model Predictive Control. Learns a <strong>latent world model
+                            with a value-equivalent objective</strong>, then uses MPPI for action selection.
+                        State-of-the-art on continuous control benchmarks.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-blue">Latent MPC</span>
+                        <span class="tag tag-amber">MPPI</span>
+                        <span class="tag tag-green">Value-equiv</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">DIAMOND</div>
+                    <div class="algo-year">Alonso et al., 2024 · NeurIPS</div>
+                    <div class="algo-desc">
+                        Uses a <strong>diffusion model as the world model</strong> to generate photorealistic
+                        imagined frames. Achieves human-level Atari from a diffusion-based environment model.
+                        Frontier of generative world models.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-purple">Diffusion WM</span>
+                        <span class="tag tag-amber">Generative</span>
+                        <span class="tag tag-red">Expensive</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">DayDreamer</div>
+                    <div class="algo-year">Wu et al., 2022</div>
+                    <div class="algo-desc">
+                        Adaptation of DreamerV2 for <strong>real physical robots</strong>. Demonstrates MBRL
+                        on quadruped locomotion, arm manipulation, and wheeled robots directly in the real world
+                        — not in simulation. Key robotics MBRL baseline.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-green">Real Robot</span>
+                        <span class="tag tag-blue">Dreamer-based</span>
+                        <span class="tag tag-purple">Physical</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">LOOP / SLBO</div>
+                    <div class="algo-year">Luo et al., 2018 · ICLR</div>
+                    <div class="algo-desc">
+                        Algorithmic Framework for MBRL with <strong>theoretical guarantees</strong> on
+                        policy improvement. Uses a monotonic improvement bound to safely blend
+                        real and model data.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-amber">Theoretical</span>
+                        <span class="tag tag-blue">Monotonic</span>
+                    </div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Dreaming Falcon</div>
+                    <div class="algo-year">2025 · Quadrotor-specific</div>
+                    <div class="algo-desc">
+                        Physics-informed MBRL for quadcopters. Replaces the GRU world model with a
+                        <strong>physics-based 6-DOF RK4 integrator</strong> predicting forces/moments,
+                        improving accuracy for aerial dynamics.
+                    </div>
+                    <div class="algo-tags">
+                        <span class="tag tag-green">Physics-informed</span>
+                        <span class="tag tag-blue">Quadrotor</span>
+                        <span class="tag tag-amber">RK4</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Algorithm Taxonomy</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>Model Type</th>
+                            <th>Model Use</th>
+                            <th>Sample Eff.</th>
+                            <th>Wall-Clock</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>PETS</td>
+                            <td>Gaussian Ensemble</td>
+                            <td>Planning (CEM)</td>
+                            <td class="t-good">★★★★★</td>
+                            <td class="t-bad">Slow</td>
+                            <td>Low-dim continuous</td>
+                        </tr>
+                        <tr>
+                            <td>MBPO</td>
+                            <td>Gaussian Ensemble</td>
+                            <td>Short rollouts → SAC</td>
+                            <td class="t-good">★★★★</td>
+                            <td class="t-mid">Medium</td>
+                            <td>Continuous control</td>
+                        </tr>
+                        <tr>
+                            <td>DreamerV3</td>
+                            <td>RSSM (Latent)</td>
+                            <td>Long imagination</td>
+                            <td class="t-good">★★★★★</td>
+                            <td class="t-mid">Medium</td>
+                            <td>Pixel input, diverse tasks</td>
+                        </tr>
+                        <tr>
+                            <td>TD-MPC2</td>
+                            <td>Latent (value-equiv)</td>
+                            <td>Latent MPPI</td>
+                            <td class="t-good">★★★★★</td>
+                            <td class="t-good">Fast</td>
+                            <td>Continuous control SOTA</td>
+                        </tr>
+                        <tr>
+                            <td>DIAMOND</td>
+                            <td>Diffusion Model</td>
+                            <td>Imagination (pixels)</td>
+                            <td class="t-good">★★★★</td>
+                            <td class="t-bad">Very slow</td>
+                            <td>Pixel fidelity, research</td>
+                        </tr>
+                        <tr>
+                            <td>DayDreamer</td>
+                            <td>RSSM</td>
+                            <td>Imagination (real)</td>
+                            <td class="t-good">★★★★</td>
+                            <td class="t-mid">Medium</td>
+                            <td>Real robot deployment</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 4: PROS / CONS -->
+        <div class="section fade-in" id="pros-cons">
+            <div class="section-header">
+                <span class="section-num">04</span>
+                <h2>Strengths & Weaknesses of MBRL</h2>
+            </div>
+
+            <div class="pc-grid">
+                <div class="pc-box pc-pro">
+                    <div class="pc-title">✦ Strengths</div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✓</span>
+                        <span><strong>Sample Efficiency.</strong> By generating thousands of synthetic rollouts from the
+                            learned model, MBRL can match or beat model-free algorithms with 10–100× less real
+                            environment data.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✓</span>
+                        <span><strong>Planning Capability.</strong> The model enables lookahead reasoning — the agent
+                            can mentally simulate consequences of actions before executing them.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✓</span>
+                        <span><strong>Transfer & Adaptation.</strong> A learned world model can be reused across tasks —
+                            only the reward head needs to change, not the full dynamics model.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✓</span>
+                        <span><strong>Uncertainty Quantification.</strong> Ensemble methods (PETS, MBPO) provide
+                            principled uncertainty estimates, enabling safe exploration.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✓</span>
+                        <span><strong>Safe RL Potential.</strong> The model can be used to predict and avoid dangerous
+                            states before they occur, critical for real robot deployment.</span>
+                    </div>
+                </div>
+                <div class="pc-box pc-con">
+                    <div class="pc-title">✦ Weaknesses</div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✗</span>
+                        <span><strong>Compounding Model Error.</strong> Small inaccuracies in the dynamics model
+                            accumulate over long rollouts, leading the policy to exploit model flaws ("model
+                            exploitation bias").</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✗</span>
+                        <span><strong>Model Learning Complexity.</strong> Training a high-fidelity dynamics model is
+                            itself a hard supervised learning problem, adding significant algorithmic and computational
+                            overhead.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✗</span>
+                        <span><strong>Distribution Shift.</strong> The model is trained on observed states; if the
+                            policy visits new states, the model's predictions become unreliable.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✗</span>
+                        <span><strong>High Compute Cost.</strong> World models like DreamerV3 require expensive training
+                            (~240 hours for drone racing). Not practical for all research budgets.</span>
+                    </div>
+                    <div class="pc-item">
+                        <span class="pc-icon">✗</span>
+                        <span><strong>Stochastic Dynamics Challenge.</strong> Highly stochastic environments
+                            (turbulence, contact physics) are very hard to model accurately.</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>The Model Exploitation Problem — In Detail</h3>
+            <p>
+                This is MBRL's most dangerous failure mode. Because the policy is trained on <em>imagined</em> data,
+                it can find spurious state-action combinations that look high-reward under the learned model
+                but are actually nonsensical. The policy becomes overly optimistic and fails in the real environment.
+            </p>
+            <div class="highlight">
+                <div class="highlight-title">⚡ MBPO's Solution: Short Rollout Horizon</div>
+                <p>
+                    MBPO showed empirically and theoretically that limiting imagined rollouts to <strong>H = 1 to 5
+                        steps</strong>
+                    dramatically reduces compounding error while still providing significant sample efficiency gains.
+                    There is a sweet spot: too short and no benefit over model-free; too long and model error explodes.
+                </p>
+            </div>
+
+            <div class="math-block">
+                <span class="math-comment">// Policy improvement bound (MBPO, Janner et al. 2019)</span>
+                η[π] ≥ η̂_model[π] - C · ε_m / (1-γ)²
+
+                <span class="math-comment">// where:</span>
+                ε_m = max_t E_π[D_TV(p̂(s'|s,a) || p(s'|s,a))] <span class="math-comment">// model error</span>
+                C = constant depending on rollout horizon H
+                <span class="math-comment">// longer H → larger C → looser bound → more risk</span>
+            </div>
+
+            <div class="followup">
+                <div class="followup-label">🧠 Nurturing Question</div>
+                <p>MBPO uses very short rollouts (H=1–5) to mitigate compounding error, while DreamerV3 uses
+                    H=15 imagination steps and works fine. What structural difference between MBPO's ensemble model
+                    and DreamerV3's RSSM might explain why DreamerV3 tolerates longer rollouts?</p>
+            </div>
+        </div>
+
+        <!-- SECTION 5: AERIAL RL -->
+        <div class="section fade-in" id="aerial">
+            <div class="section-header">
+                <span class="section-num">05</span>
+                <h2>MBRL for Aerial Robotics — Your Research Domain</h2>
+            </div>
+
+            <p>
+                Quadrotors are a natural fit for MBRL: real-world data collection is expensive (hardware damage,
+                resets), sample efficiency is critical, and the dynamics are sufficiently structured that a
+                physics-informed model can be highly accurate. Here is the current landscape of MBRL applied to UAVs.
+            </p>
+
+            <h3>Why MBRL Fits Quadrotors Especially Well</h3>
+            <div class="algo-grid">
+                <div class="algo-card">
+                    <div class="algo-name">Sample Cost</div>
+                    <div class="algo-desc">
+                        Real quadrotor data collection is slow and crash-prone. MBRL's 10–100× sample efficiency
+                        means fewer dangerous real-world rollouts are needed before the policy becomes competent.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-green">Critical Benefit</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Physics Priors</div>
+                    <div class="algo-desc">
+                        Quadrotor rigid-body dynamics are well-understood. Physics-informed world models
+                        (e.g. Dreaming Falcon's RK4 integrator) can embed Newton's laws, drastically reducing
+                        the data needed to fit the residual dynamics.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-blue">Inductive Bias</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Partial Observability</div>
+                    <div class="algo-desc">
+                        Vision-based flight with a forward-facing camera is a POMDP — you can't fully observe
+                        the world state. RSSM-based world models explicitly handle partial observability through
+                        their recurrent deterministic state h_t.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-purple">POMDP</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Fast Agile Maneuvers</div>
+                    <div class="algo-desc">
+                        Post-stall aerobatics and drone racing require planning over multiple steps.
+                        MBRL's lookahead capability is a direct advantage over reactive model-free policies.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-amber">Planning Horizon</span></div>
+                </div>
+            </div>
+
+            <h3>Dream to Fly — DreamerV3 on Drone Racing (2025)</h3>
+            <p>
+                A 2025 paper demonstrated DreamerV3 training <strong>visuomotor policies for agile drone racing
+                    directly from pixels</strong> — no intermediate state representation, no imitation learning
+                bootstrap.
+                Key findings compared to model-free baselines (PPO, SAC):
+            </p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>DreamerV3</th>
+                            <th>PPO (model-free)</th>
+                            <th>SAC (model-free)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sample Efficiency</td>
+                            <td class="t-good">✓ Superior</td>
+                            <td class="t-bad">✗ Poor</td>
+                            <td class="t-bad">✗ Poor</td>
+                        </tr>
+                        <tr>
+                            <td>Pixel Input</td>
+                            <td class="t-good">✓ Native</td>
+                            <td class="t-mid">∼ Struggles</td>
+                            <td class="t-mid">∼ Struggles</td>
+                        </tr>
+                        <tr>
+                            <td>Training Time</td>
+                            <td class="t-bad">~240 hours (RTX 8000)</td>
+                            <td class="t-mid">Faster</td>
+                            <td class="t-mid">Faster</td>
+                        </tr>
+                        <tr>
+                            <td>Emergent Behavior</td>
+                            <td class="t-good">Camera steers toward gates</td>
+                            <td class="t-bad">None observed</td>
+                            <td class="t-bad">None observed</td>
+                        </tr>
+                        <tr>
+                            <td>Real Transfer (HIL)</td>
+                            <td class="t-good">✓ Validated up to 9 m/s</td>
+                            <td class="t-bad">Not achieved</td>
+                            <td class="t-bad">Not achieved</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Dreaming Falcon — Physics-Informed World Model (2025)</h3>
+            <p>
+                A critical insight for quadrotors: standard RNN-based world models (like DreamerV3's GRU)
+                struggle with quadrotor dynamics because they don't respect the rigid-body physics structure.
+                Dreaming Falcon replaces the recurrent transition model with a <strong>physics-based
+                    6-DOF Runge-Kutta integrator</strong>:
+            </p>
+            <div class="math-block">
+                <span class="math-comment">// Dreaming Falcon world model</span>
+                <span class="math-comment">// Instead of: h_t = GRU(h_{t-1}, z_{t-1}, a_{t-1})</span>
+                <span class="math-comment">// Use physics:</span>
+
+                [F_net, τ_net] = f_θ(h_t, a_t) <span class="math-comment">// NN predicts forces/moments</span>
+                [pos, vel, att, ω] = RK4_integrate( <span class="math-comment">// integrate Newton's laws</span>
+                state_t, F_net, τ_net, Δt
+                )
+
+                <span class="math-comment">// Benefits:</span>
+                <span class="math-comment">// 1. Respects conservation laws by construction</span>
+                <span class="math-comment">// 2. Better extrapolation to unseen maneuvers</span>
+                <span class="math-comment">// 3. Physically interpretable</span>
+            </div>
+
+            <h3>Open Research Challenges in Aerial MBRL</h3>
+            <div class="algo-grid">
+                <div class="algo-card">
+                    <div class="algo-name">Aerodynamic Stochasticity</div>
+                    <div class="algo-desc">
+                        Turbulence, propeller wash, and ground effect introduce high stochasticity.
+                        Current RSSM models underfit this. Gaussian process or diffusion-based models may help.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-red">Open Problem</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Real Pixel Transfer</div>
+                    <div class="algo-desc">
+                        Dream to Fly used a hardware-in-the-loop setup with rendered pixels, not
+                        real camera images. The domain gap for real outdoor scenes remains an open problem.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-red">Open Problem</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Compute Budget</div>
+                    <div class="algo-desc">
+                        240 hours on a Quadro RTX 8000 is prohibitive for most research labs.
+                        Smaller world model architectures optimized for aerial tasks are needed.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-amber">Scalability</span></div>
+                </div>
+                <div class="algo-card">
+                    <div class="algo-name">Safe Exploration</div>
+                    <div class="algo-desc">
+                        MBRL should enable safe exploration via model-predicted constraint checking,
+                        but integrating hard safety constraints (obstacle avoidance) into the imagination
+                        loop is still largely unsolved.
+                    </div>
+                    <div class="algo-tags"><span class="tag tag-red">Safety</span></div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <div class="highlight-title">🚁 Recommended Starting Point for Your Research</div>
+                <p>
+                    For a quadrotor MBRL project: start with <strong>DreamerV3 + Flightmare/Isaac Lab</strong>
+                    for simulation. Use the physics-informed modification from Dreaming Falcon as a model
+                    architecture improvement. Ground your experiments in the state-vector observation space first
+                    (not pixels) to isolate dynamics modeling from perception. Then add pixel observations once
+                    the state-based policy is solid — matching the progression in "Dream to Fly."
+                </p>
+            </div>
+
+            <div class="followup">
+                <div class="followup-label">🧠 Nurturing Question</div>
+                <p>Dreaming Falcon embeds a 6-DOF RK4 integrator as the world model's transition backbone.
+                    This gives the model strong inductive bias from physics. But quadrotors also have complex
+                    rotor aerodynamics, blade flapping, and motor delays that the simplified rigid-body model ignores.
+                    How would you design the neural network component f_θ to best capture these residual dynamics —
+                    and what observations would you include as input to f_θ?</p>
+            </div>
+        </div>
+
+        <!-- SECTION 6: PAPERS -->
+        <div class="section fade-in" id="papers">
+            <div class="section-header">
+                <span class="section-num">06</span>
+                <h2>Key Papers to Read</h2>
+            </div>
+
+            <div class="paper">
+                <div class="paper-dot"></div>
+                <div>
+                    <div class="paper-title">Mastering Diverse Domains through World Models (DreamerV3)</div>
+                    <div class="paper-meta">Hafner et al. · Nature 2025 · arxiv:2301.04104</div>
+                    <div class="paper-note">The definitive world model paper. Fixed hyperparameters across all tasks.
+                        Read this first.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent2)"></div>
+                <div>
+                    <div class="paper-title">When to Trust Your Model: MBPO</div>
+                    <div class="paper-meta">Janner et al. · NeurIPS 2019 · arxiv:1906.08253</div>
+                    <div class="paper-note">Foundational Dyna-style MBRL. Understand the theory behind short rollout
+                        horizons.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent3)"></div>
+                <div>
+                    <div class="paper-title">TD-MPC2: Scalable, Robust World Models for Continuous Control</div>
+                    <div class="paper-meta">Hansen et al. · ICLR 2024 · arxiv:2310.16828</div>
+                    <div class="paper-note">Current SOTA on continuous control. Excellent for robotic arm / locomotion
+                        comparisons.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent4)"></div>
+                <div>
+                    <div class="paper-title">Dream to Fly: MBRL for Vision-Based Drone Flight</div>
+                    <div class="paper-meta">arxiv:2501.14377 · 2025</div>
+                    <div class="paper-note">Directly applies DreamerV3 to drone racing from pixels. Essential for your
+                        research direction.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent-red)"></div>
+                <div>
+                    <div class="paper-title">Dreaming Falcon: Physics-Informed MBRL for Quadcopters</div>
+                    <div class="paper-meta">arxiv:2511.18243 · 2025</div>
+                    <div class="paper-note">Combines Dreamer with a 6-DOF physics integrator. Directly relevant to your
+                        research.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent2)"></div>
+                <div>
+                    <div class="paper-title">DayDreamer: World Models for Physical Robot Learning</div>
+                    <div class="paper-meta">Wu et al. · 2022</div>
+                    <div class="paper-note">Dreamer on real robots without simulation. Key bridge from sim-to-real to
+                        real-to-real.</div>
+                </div>
+            </div>
+            <div class="paper">
+                <div class="paper-dot" style="background: var(--accent3)"></div>
+                <div>
+                    <div class="paper-title">PETS: Deep Reinforcement Learning in a Handful of Trials</div>
+                    <div class="paper-meta">Chua et al. · NeurIPS 2018 · arxiv:1805.12114</div>
+                    <div class="paper-note">Foundational ensemble-based MBRL. Understand this before studying MBPO.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /page -->
+
+    <footer>
+        Model-Based Reinforcement Learning · Proxima's Research Reference · April 2026
+    </footer>
+
+    <script>
+        // Scroll-based fade-in
+        const observer = new IntersectionObserver(
+            entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+            { threshold: 0.08 }
+        );
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+</body>
+
+</html>
